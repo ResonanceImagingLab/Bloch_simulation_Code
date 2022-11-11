@@ -1,0 +1,180 @@
+function TParams = fitTissueParamsFromLUT(inputParams, StandardizedResidudals, nIterations)
+
+% The goal of this function is to do an iterative search process to fit tissue parameters
+% to the simulations that were run on a grid of possible tissue parameter options
+
+% The iterative process involves uses griddedInterpolant to fit the residuals as a 
+% function of the tissue parameters, finding the minimum value, then repeating with
+% a finer grid of tissue parameters fit that are centerered on the previous minimum
+% that are fitted to the initial gridded interpolant function.
+
+%% To save time, code for 6 parameters. Can be modifed later for different number. (m ==6)
+dd = 'E:\Research\SeqDevelopment\CorticalihMT\cortical_ihMT_sim\data\20220204_ihMT_3prot_test_boost\fitTissParams\4p3p1_BSF\';
+inputParams = load([dd,'parametersSet.mat']); inputParams = inputParams.parametersSet;
+StandardizedResidudals = load([dd,'standardized_residuals.mat']); StandardizedResidudals = StandardizedResidudals.standardized_residuals;
+StandardizedResidudals = sum(abs(StandardizedResidudals),2);
+
+% Inputs:
+% inputParams will be n x m in size. Each row corresponds to a residual,and
+%      each column is a different input parameter
+
+% StandardizedResidudals with be 1 x n
+
+% nIterations is the number of times you want to repeat looping through to a finer grid
+%     current default set to 10. 
+
+if nargin < 3
+      nIterations = [];
+end
+
+if isempty(nIterations)
+      nIterations = 10;
+end
+
+fitThreshold = 0.001;
+
+nParams = 6; %size(inputParams, 2);
+TParams = zeros(1, nParams);
+
+
+
+%% Need to deal with possible inputParams that weren't modified. 
+% look in each column. If number of unique params <2, remove column
+% and input that parameter into the TParams.
+
+
+% for now, lets just keep track of each variable, and then will fit a
+% degree to that variable based on the number of points. 
+
+rVec = zeros(1, nParams);
+
+for i = 1:nParams
+      v = unique(inputParams(:,i));
+      rVec(i) = length(v);
+      if length(v) < 2
+            TParams(i) = v;
+            rVec(i) = 1;
+      end
+end
+
+% inputParams(:,rVec== 1) = []; % remove columns
+
+
+%% Lets fit the solution space. 
+% look at simulation code...
+% build a quadratic function
+
+[modelTerms, iPr] = buildTissueParamFitEqn(rVec, inputParams);
+
+%% Normalize the data by the mean to help with fitting,
+norm_fact = mean(iPr,1);
+iPr = iPr./norm_fact;
+
+%% First determine search space fom the inputParams 
+LP = min(iPr);  % each column is a variable, find the minimum value
+HP = max(iPr);  % each column is a variable, find the minimum value
+
+
+tic
+fit_eqn = polyfitn(iPr, StandardizedResidudals, modelTerms); % ~ 5 seconds. 
+toc
+
+% for i = 1:size(iPr,2)
+%     fit_eqn.VarNames{1,i} = strcat('x',num2str(i)); % these will be the variable names required to evaluate them
+% end
+
+% if needed, this can be evaluated using:
+%vq = polyvaln(fit_eqn,indepvar); % where indepvar is nxp, p = 6;
+
+%% With a function fit, we can find a minimum 
+% iteratively search to save memory
+
+numPoints = 20; % evaluation points per unique value in parameter set 
+fitSz = length(LP);
+lp = LP;
+hp = HP;
+prevFit = 0;
+id = 0;
+
+% iterate until convergence, or until nIterations reached
+while  (id < nIterations)
+
+      % generate search space from lp to hp
+      outVec = getNDvectors(fitSz, lp, hp, numPoints);
+
+      % fit mesh to fit equation
+      vq = polyvaln(fit_eqn,outVec); % where indepvar is nxp, p = 6;
+
+      % Use the minimum to extract the next best estimate of fit tissue values
+      [fitVal] = extractMinFromLUT(outVec,vq);
+
+      % update search params for next cycle
+      [lp, hp] = updateSearchParams(fitVal, lp, hp);
+
+
+      % calculate difference in fit. Convergence occurs when no parameter
+      % changes more than the threshold chosen. 
+      thres = max(abs(fitVal - prevFit)./fitVal)
+
+      id = id +1;
+      prevFit = fitVal;
+end
+
+
+
+% Un-normalize fit parameters and put into the TParams vector.
+
+finalV = fitVal .* norm_fact;
+
+id = 1;
+for i = 1:nParams
+      if rVec(i) > 1
+            TParams(i) = finalV(id);
+            id = id+1;
+      end
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+% iterate until convergence, or until nIterations reached
+while (thres > fitThreshold) || (id < nIterations)
+
+      % generate search space mesh from lp to hp
+      paramMesh = getNDmesh(lp, hp);
+
+      % fit mesh to fit equation
+      vq = polyvaln(fit_eqn,indepvar); % where indepvar is nxp, p = 6;
+
+      % Use the minimum to extract the next best estimate of fit tissue values
+      [fitVal] = extractMinFromLUT(paramMesh,vq);
+
+      % update search params for next cycle
+      [lp, hp] = updateSearchParams(fitVal, lp, hp);
+
+
+      % calculate difference in fit. Convergence occurs when no parameter
+      % changes more than the threshold chosen. 
+      thres = max(abs(fitVal - prevFit)./fitVal);
+
+      id = id +1;
+      prevFit = fitVal;
+end
+
+
+
+
+
+
