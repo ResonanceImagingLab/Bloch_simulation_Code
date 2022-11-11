@@ -1,0 +1,31 @@
+function NextDir = getDirection(currentDirection, checkIteration)
+
+% checkIteration is variable that we loop over for conditions
+directions = [ 0,1; 1,0; 0, -1; -1,0]; % right, up, left, down
+
+if isequal( currentDirection , directions(1,:))
+
+    if checkIteration == 1
+        NextDir = directions(4,:);
+    elseif
+
+    elseif
+
+    elseif
+
+    else
+        error(' only 4 oopti')
+
+
+
+
+elseif isequal( currentDirection ,directions(2,:))
+
+elseif isequal( currentDirection ,directions(3,:))
+
+elseif isequal( currentDirection ,directions(4,:))
+
+else
+    error('Unrecognized direction');
+
+end

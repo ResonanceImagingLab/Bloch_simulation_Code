@@ -1,0 +1,5 @@
+For version 4, we have a complete re-write and reworking.
+
+- Now keeping track of transverse magnetization, (including RF spoiling and spin diffusion during excitation train)
+- currently ignoring spin diffusion during long blocks of relaxation/spin evolution. 
+- ignorning spin diffusion after MT pulses (but paying attention to it starting with the spoiler at the end of the MT train. 
