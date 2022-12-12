@@ -1,4 +1,5 @@
-function fitMetric = fitPolyComputeInnerProd(sigL, sigM, sigH, fitData, b1Field)
+function fitMetric = fitPolyComputeInnerProd(sigL, sigM, sigH,...
+                                        fitData, b1Field, maxDot)
 
 % sigL, sigM and sigH hold sat values, need to fit each with a 3th degree
 % polynomial. Then evaluate that polynomial using the fitData points.
@@ -26,15 +27,32 @@ for i = 1:6
 
      fitCoeffMat = polyfit(b1Field, sigM(:,i), fit_degree);
      y_fit = polyval(fitCoeffMat ,fitData(10,:)); % calculate fit curve
-     fitMetric(2,i) = dot(1+y_fit, fitData(i,:));
+     fitMetric(2,i) = dot(1+y_fit, 1+fitData(i,:));
 
      fitCoeffMat = polyfit(b1Field, sigH(:,i), fit_degree);
      y_fit = polyval(fitCoeffMat ,fitData(10,:)); % calculate fit curve
      fitMetric(3,i) = dot(1+y_fit, 1+fitData(i,:));
 end
 
+% From this, we want to sum across the sequences to combine the
+% scores. highest wins
+fitMetric = sum(fitMetric,2);
 
+  
 
+% we know theoretical max, but it could exceed, so take away
+% anything over the max.
+if fitMetric(1) > maxDot
+    fitMetric(1) = fitMetric(1) - (fitMetric(1)-maxDot);
+end
+
+if fitMetric(2) > maxDot
+    fitMetric(2) = fitMetric(2) - (fitMetric(2)-maxDot);
+end
+
+if fitMetric(3) > maxDot
+    fitMetric(3) = fitMetric(3) - (fitMetric(3)-maxDot);
+end
 
 
 

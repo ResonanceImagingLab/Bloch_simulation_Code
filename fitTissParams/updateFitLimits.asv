@@ -1,15 +1,17 @@
 function    [lowerLimit,highLimit] = updateFitLimits(cVal, lowerLimit, highLimit, idx)
 
-% get an issue with some of these parameters changing non-linearly in
-% realistic since. So try and move the limits more slowly if needed.
+% try updating in to 75% of the difference between limit and estimate.
+
 
 L1 = cVal(2)- 0.85*(cVal(2)-lowerLimit(idx));
 L2 = lowerLimit(idx) + 0.1* lowerLimit(idx);
 lowerLimit(idx) = min([L1,L2]);
 
-H1 = cVal(2)+ 0.85*(highLimit(idx)-cVal(2));
+H1 = cVal(2)- 0.85*(cVal(2)-highLimit(idx));
 H2 = highLimit(idx) - 0.1* highLimit(idx);
 highLimit(idx) = max([H1,H2]);
+
+highLimit(idx) = cVal(2)+ 0.85*(highLimit(idx)- cVal(2));
 
 
 

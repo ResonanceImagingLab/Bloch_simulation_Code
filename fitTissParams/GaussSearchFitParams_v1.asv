@@ -8,20 +8,25 @@
 % with itself. The FWHM is used to update limits for next iteration, and the max
 % is set to the new best guess. This  is repeated on each variable (one at a
 % time) for each iteration.
+
+addpath(genpath( 'E:\GitHub\qMRLab-master'))
+addpath(genpath('E:\GitHub\Bloch_simulation_Code'))
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% Initialize the problem
+maxIterations = 25;
+
 
 % Variable vectors are in order: M0B, R, T2B, T1D, T2A, R1B
-%            M0B,     R,   T2B,  T1D,      T2A,  R1B
-currList   = [0.07,  35, 11e-6, 1e-3,    50e-3,  1]; % current estimate/start
-lowerLimit = [0.02,  15,  7e-6, 0.05e-3, 10e-3,  0.01]; % set lower limits for fit
-highLimit  = [0.12,  90, 14e-6, 40e-3,  120e-3,  1.5]; % set lower limits for fit
+%            M0B,     R,   T2B,  T1D,   T2A,  R1B
+currList   = [0.065, 40, 11e-6, 7e-4,  60e-3,  1]; % current estimate/start
+lowerLimit = [0.02,  15,  7e-6, 2e-4,  20e-3,  0.01]; % set lower limits for fit
+highLimit  = [0.12,  90, 14e-6, 25e-3, 120e-3,  1.5]; % set lower limits for fit
 
 
-maxIterations = 10;
 
 
+savDir = 'E:\GitHub\Bloch_simulation_Code\fitTissParams\outputs\gaussFit\';
 load( strcat('E:\GitHub\Bloch_simulation_Code\kspaceWeighting\Atlas_reference\','GM_seg_MNI_152_image.mat'))
 load( strcat('E:\GitHub\Bloch_simulation_Code\kspaceWeighting\Atlas_reference\','GM_seg_MNI_152_kspace.mat'))
 
@@ -68,28 +73,32 @@ b1Field = round( linspace(b1L, b1H, 4), 2);
 iteration = 1;
 num2fit = length(currList);
 
-maxDot = 0; % max value for fit reference
-for i = 1:6
-    maxDot = maxDot + dot(1+fitData(i,:), 1+fitData(i,:));
-end
-
-
-trackingMat = zeros(10000,7); % store each variable, and the calculate FWHM
+trackingMat = zeros(maxIterations*6+1,8); % store each variable, and the calculate FWHM
 trackingMat(1,1:6) = currList;
 id = 2;
 
-while iteration < maxIterations
+while iteration <= maxIterations
 
     for i = 1:num2fit % for each variable:
+
+        if ((highLimit(i) - lowerLimit(i)) / (highLimit(i) + lowerLimit(i)) > 0.05
+
         
+        % if we fit to the limit on a previous run, move the needle
+        % slightly
+
+        if currList(i) == lowerLimit(i) || currList(i) == highLimit(i)
+            currList(i) = (highLimit(i) + lowerLimit(i)) /2;
+        end
 
         % the middle will always need to be calculated
         sigM = simSequenceForFit(Params, Params2, Params3,...
             currList(1), currList(2),  currList(3),...
             currList(4), currList(5),  currList(6), b1Field,...
             gm_m, fft_gm_m, SamplingTable, SamplingTable2, SamplingTable3 );
+
         
-        switch num2fit
+        switch i
             case 1
                 sigL = simSequenceForFit(Params, Params2, Params3,...
                     lowerLimit(1), currList(2),  currList(3),...
@@ -161,40 +170,54 @@ while iteration < maxIterations
         % With sat values solves, fit polynomials, evaluate over B1points,
         % and compute inner product to evaluate fits.
 
-        fitMetricY = fitPolyComputeInnerProd(sigL, sigM, sigH, fitData, b1Field);
-
-        % From this, we want to sum across the sequences to combine the
-        % scores. highest wins
-        fitMetricY = sum(fitMetricY,2);
+        fitMetricY = fitPolyComputeStdResid(sigL, sigM, sigH,...
+            fitData, b1Field);
 
         % Use these 3 data points to fit a gaussian to the fit results to
         % try and estimate where the peak will be (fit parameter!). Use
         % FWHM to update low and high limits so we hopefully narrow over
         % time. Do not allow them to exceed current limits
 
-        fitresult = createGaussFit([lowerLimit(i);currList(i);highLimit(i)],...
-            fitMetricY, maxDot);
-        cVal = coeffvalues(fitresult);
-
-        currList(i) = cVal(2); % new guess
-        disp(['Current parameters are estimated as'])
-
-
-        %% Can remove later, current guess.
-        trackingMat(1,1:6) = currList;
-        id = id+1;
+        cVal = createInvertedGaussFit([lowerLimit(i);currList(i);highLimit(i)],...
+            fitMetricY);
         
+        currList(i) = cVal(2); % new guess
 
+        str = ['M0b = ',num2str(currList(1)),' R = ',num2str(currList(2)),...
+            ' T2B = ',num2str(currList(3)),' T1D = ',num2str(currList(4)),...
+            ' T2A = ',num2str(currList(5)),' R1B = ',num2str(currList(6))];
+
+        disp(['Current estimated: ', str]);
+
+        % Update limits:
+        [lowerLimit,highLimit] = updateFitLimits(cVal, lowerLimit,highLimit, i);
+
+
+        %% Can remove later, current guess. 7th column is FWHM normalized by estimate
+        trackingMat(id,1:6) = currList; trackingMat(id,7) = cVal(3)/cVal(2); 
+        trackingMat(id,8) = i; id = id+1;
+        
+       
     end
 
     iteration = iteration + 1;
 end
 
+%% Save output:
+vers = 4;
+
+save([savDir,'trackingMat',num2str(vers),'.mat'], "trackingMat");
+save([savDir,'currList',num2str(vers),'.mat'], "currList");
+save([savDir,'lowerLimit',num2str(vers),'.mat'], "lowerLimit");
+save([savDir,'highLimit',num2str(vers),'.mat'], "highLimit");
 
 
-Ssig1
-
-
+%% Check fit:
+Savefn = [savDir,'initialFit',num2str(vers),'.png'];
+generateFitFigure(Params, Params2, Params3,rawProc,...
+                    currList(1), currList(2),  currList(3),...
+                    currList(4), currList(5),  currList(6),Savefn,...
+                    gm_m, fft_gm_m, SamplingTable, SamplingTable2, SamplingTable3 )
 
 
 
