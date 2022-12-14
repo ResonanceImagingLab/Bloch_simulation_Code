@@ -5,32 +5,31 @@ function sat = simSequenceForFit(Params, Params2, Params3,...
 % This simulates the signal, and outputs a matrix where each row is a
 % separate B1 relative value, with six columns for the 6 different
 % sequences. outputs are the MTsat values
-
-Ssig1 = zeros(Params.TurboFactor, 4 );
-Ssig2 = zeros(Params2.TurboFactor, 4 );
-Ssig3 = zeros(Params3.TurboFactor, 4 );
 Dsig1 = zeros(Params.TurboFactor, 4 );
 Dsig2 = zeros(Params2.TurboFactor, 4 );
 Dsig3 = zeros(Params3.TurboFactor, 4 );
+Ssig1 = zeros(Params.TurboFactor, 4 );
+Ssig2 = zeros(Params2.TurboFactor, 4 );
+Ssig3 = zeros(Params3.TurboFactor, 4 );
 
 % simulate for each sequence, 4 relative b1 values, get mag over readout
 for i = 1:4
-     [Ssig1(:,i),~, ~]  = BlochSimFlashSequence_v2(Params,'freqPattern', 'single', 'b1', Params.b1*B1rms(i),...
+     [Dsig1(:,i),~, ~]  = BlochSimFlashSequence_v2(Params,'freqPattern', 'dualAlternate', 'b1', Params.b1*B1rms(i),...
          'R', R, 'T2a', T2A, 'T1D',T1D, 'T2b', T2B, 'M0b', M0B, 'R1b', R1B ); 
                     
-     [Ssig2(:,i),~, ~]  = BlochSimFlashSequence_v2(Params2,'freqPattern', 'single', 'b1', Params2.b1*B1rms(i),...
-         'R', R, 'T2a', T2A, 'T1D',T1D, 'T2b', T2B, 'M0b', M0B, 'R1b', R1B );
-     
-     [Ssig3(:,i),~, ~]  = BlochSimFlashSequence_v2(Params3,'freqPattern', 'single', 'b1', Params3.b1*B1rms(i),...
-         'R', R, 'T2a', T2A, 'T1D',T1D, 'T2b', T2B, 'M0b', M0B, 'R1b', R1B );
-     
-     [Dsig1(:,i),~, ~]  = BlochSimFlashSequence_v2(Params,'freqPattern', 'dualAlternate', 'b1', Params.b1* B1rms(i),...
-         'R', R, 'T2a', T2A, 'T1D',T1D, 'T2b', T2B, 'M0b', M0B, 'R1b', R1B );
-          
      [Dsig2(:,i),~, ~]  = BlochSimFlashSequence_v2(Params2,'freqPattern', 'dualAlternate', 'b1', Params2.b1*B1rms(i),...
          'R', R, 'T2a', T2A, 'T1D',T1D, 'T2b', T2B, 'M0b', M0B, 'R1b', R1B );
+     
+     [Dsig3(:,i),~, ~]  = BlochSimFlashSequence_v2(Params3,'freqPattern', 'dualAlternate', 'b1', Params3.b1*B1rms(i),...
+         'R', R, 'T2a', T2A, 'T1D',T1D, 'T2b', T2B, 'M0b', M0B, 'R1b', R1B );
+     
+     [Ssig1(:,i),~, ~]  = BlochSimFlashSequence_v2(Params,'freqPattern', 'single', 'b1', Params.b1* B1rms(i),...
+         'R', R, 'T2a', T2A, 'T1D',T1D, 'T2b', T2B, 'M0b', M0B, 'R1b', R1B );
+          
+     [Ssig2(:,i),~, ~]  = BlochSimFlashSequence_v2(Params2,'freqPattern', 'single', 'b1', Params2.b1*B1rms(i),...
+         'R', R, 'T2a', T2A, 'T1D',T1D, 'T2b', T2B, 'M0b', M0B, 'R1b', R1B );
 
-     [Dsig3(:,i),~, ~]  = BlochSimFlashSequence_v2(Params3,'freqPattern', 'dualAlternate', 'b1', Params3.b1* B1rms(i),...
+     [Ssig3(:,i),~, ~]  = BlochSimFlashSequence_v2(Params3,'freqPattern', 'single', 'b1', Params3.b1* B1rms(i),...
          'R', R, 'T2a', T2A, 'T1D',T1D, 'T2b', T2B, 'M0b', M0B, 'R1b', R1B ); 
 end
 
@@ -38,12 +37,12 @@ end
 sig = zeros( 4, 6);
 
 for i = 1:4 % for each b1
-    sig(i,1) = CR_generate_BSF_scaling_v1( squeeze(Ssig1(:,i)), Params,  outputSamplingTable,  gm_m, fft_gm_m) ;  
-    sig(i,2) = CR_generate_BSF_scaling_v1( squeeze(Ssig2(:,i)), Params2, outputSamplingTable2, gm_m, fft_gm_m) ;
-    sig(i,3) = CR_generate_BSF_scaling_v1( squeeze(Ssig3(:,i)), Params3, outputSamplingTable3, gm_m, fft_gm_m) ;
-    sig(i,4) = CR_generate_BSF_scaling_v1( squeeze(Dsig1(:,i)), Params,  outputSamplingTable,  gm_m, fft_gm_m) ;
-    sig(i,5) = CR_generate_BSF_scaling_v1( squeeze(Dsig2(:,i)), Params2, outputSamplingTable2, gm_m, fft_gm_m) ;
-    sig(i,6) = CR_generate_BSF_scaling_v1( squeeze(Dsig3(:,i)), Params3, outputSamplingTable3, gm_m, fft_gm_m) ;  
+    sig(i,1) = CR_generate_BSF_scaling_v1( squeeze(Dsig1(:,i)), Params,  outputSamplingTable,  gm_m, fft_gm_m) ;  
+    sig(i,2) = CR_generate_BSF_scaling_v1( squeeze(Dsig2(:,i)), Params2, outputSamplingTable2, gm_m, fft_gm_m) ;
+    sig(i,3) = CR_generate_BSF_scaling_v1( squeeze(Dsig3(:,i)), Params3, outputSamplingTable3, gm_m, fft_gm_m) ;
+    sig(i,4) = CR_generate_BSF_scaling_v1( squeeze(Ssig1(:,i)), Params,  outputSamplingTable,  gm_m, fft_gm_m) ;
+    sig(i,5) = CR_generate_BSF_scaling_v1( squeeze(Ssig2(:,i)), Params2, outputSamplingTable2, gm_m, fft_gm_m) ;
+    sig(i,6) = CR_generate_BSF_scaling_v1( squeeze(Ssig3(:,i)), Params3, outputSamplingTable3, gm_m, fft_gm_m) ;  
 end
 
 %% Use intensity to calculate MTsat

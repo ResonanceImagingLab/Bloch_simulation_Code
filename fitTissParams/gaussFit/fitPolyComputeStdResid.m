@@ -14,7 +14,7 @@ function fitMetric = fitPolyComputeStdResid(sigL, sigM, sigH,...
 fit_degree = 3;
 
 % to better fit T1D, weight the single more strongly
-singleMultiplier = [1.2 1.2 1.2 1 1 1];
+singleMultiplier = [1 1 1 1 1 1];
 
 fitMetric = zeros(3,6); % ultimately, we will want to sum across sequences, but can do later
 

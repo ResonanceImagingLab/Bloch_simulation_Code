@@ -1,0 +1,34 @@
+function  [lowerLimit,highLimit] = updateFitLimitsQuad(vertex, lowerLimit,...
+                     highLimit, currX, idx)
+
+% get an issue with some of these parameters changing non-linearly in
+% realistic since. So try and move the limits more slowly if needed.
+if idx == 4
+    logVertex = log(vertex);
+end
+
+
+%% we have three cases, vertex is to left, centered or to right currX
+% if guess is to left, then move high limit more
+if currX > vertex
+    H1 = logVertex+ 0.75*(highLimit(idx)-logVertex);
+
+% if guess is centered, move both (unlikely)
+elseif currX == vertex
+
+% if guess is right, move low limit more. 
+
+else 
+
+
+end
+
+L1 = logVertex- 0.85*(logVertex-lowerLimit(idx));
+L2 = lowerLimit(idx) + 0.05* lowerLimit(idx);
+lowerLimit(idx) = min([L1,L2]);
+
+H1 = logVertex+ 0.85*(highLimit(idx)-logVertex);
+H2 = highLimit(idx) - 0.05* highLimit(idx);
+highLimit(idx) = max([H1,H2]);
+
+

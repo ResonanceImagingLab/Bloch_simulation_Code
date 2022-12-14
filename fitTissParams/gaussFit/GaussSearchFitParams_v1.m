@@ -19,14 +19,14 @@ maxIterations = 25;
 
 % Variable vectors are in order: M0B, R, T2B, T1D, T2A, R1B
 %            M0B,     R,   T2B,  T1D,   T2A,  R1B
-% currList   = [0.065, 40, 11e-6, 7e-4,  60e-3,  1]; % current estimate/start
-% lowerLimit = [0.02,  15,  7e-6, 2e-4,  20e-3,  0.01]; % set lower limits for fit
-% highLimit  = [0.12,  90, 14e-6, 25e-3, 120e-3,  1.5]; % set lower limits for fit
+currList   = [0.065, 40, 11e-6, 7e-4,  60e-3,  1]; % current estimate/start
+lowerLimit = [0.03,  20,  8e-6, 2e-4,  20e-3,  0.01]; % set lower limits for fit
+highLimit  = [0.12,  80, 14e-6, 25e-3, 120e-3,  1.5]; % set lower limits for fit
 
 %% Second run, tighten limits:
-currList   = [0.068, 51, 11e-6, 7e-4,  65e-3,  1]; % current estimate/start
-lowerLimit = [0.055, 40,  7e-6, 4e-4,  50e-3,  0.2]; % set lower limits for fit
-highLimit  = [0.08,  60, 14e-6, 6e-3,  70e-3,  1.5]; % set lower limits for fit
+% currList   = [0.07, 50, 11e-6, 7e-4,  65e-3,  1]; % current estimate/start
+% lowerLimit = [0.055, 40,  7e-6, 4e-4,  50e-3,  0.2]; % set lower limits for fit
+% highLimit  = [0.08,  60, 14e-6, 6e-3,  70e-3,  1.5]; % set lower limits for fit
 
 
 savDir = 'E:\GitHub\Bloch_simulation_Code\fitTissParams\outputs\gaussFit\';
@@ -78,6 +78,10 @@ num2fit = length(currList);
 
 trackingMat = zeros(maxIterations*6+1,8); % store each variable, and the calculate FWHM
 trackingMat(1,1:6) = currList;
+
+% keep track of current best:
+BestVals = [currList, 1e6];
+
 id = 2;
 tic
 while iteration <= maxIterations
@@ -176,6 +180,20 @@ while iteration <= maxIterations
     
             fitMetricY = fitPolyComputeStdResid(sigL, sigM, sigH,...
                 fitData, b1Field);
+
+            % update best vals if lower resid:
+            if any(fitMetricY < BestVals(7))
+                [M,I] = min(fitMetricY);
+                switch I
+                    case 1
+                        BestVals(1:6) = lowerLimit;
+                    case 2
+                        BestVals(1:6) = currList;
+                    case 3
+                        BestVals(1:6) = highLimit;
+                end
+                BestVals(7) = M;
+            end
     
             % Use these 3 data points to fit a gaussian to the fit results to
             % try and estimate where the peak will be (fit parameter!). Use
@@ -187,9 +205,9 @@ while iteration <= maxIterations
             
             currList(i) = cVal(2); % new guess
     
-            str = ['M0b = ',num2str(currList(1)),' R = ',num2str(currList(2)),...
-                ' T2B = ',num2str(currList(3)),' T1D = ',num2str(currList(4)),...
-                ' T2A = ',num2str(currList(5)),' R1B = ',num2str(currList(6))];
+            str = ['M0b = ',num2str(BestVals(1)),' R = ',num2str(BestVals(2)),...
+                ' T2B = ',num2str(BestVals(3)),' T1D = ',num2str(BestVals(4)),...
+                ' T2A = ',num2str(BestVals(5)),' R1B = ',num2str(BestVals(6))];
     
             disp(['Current estimated: ', str]);
             toc
@@ -198,7 +216,7 @@ while iteration <= maxIterations
     
     
             %% Can remove later, current guess. 7th column is FWHM normalized by estimate
-            trackingMat(id,1:6) = currList; trackingMat(id,7) = cVal(3)/cVal(2); 
+            trackingMat(id,1:6) = currList; trackingMat(id,7) = min(fitMetricY); 
             trackingMat(id,8) = i; id = id+1;
         
         end
@@ -209,7 +227,7 @@ end
 
 %% Save output:
 
-vers = 5;
+vers = 7;
 
 save([savDir,'trackingMat',num2str(vers),'.mat'], "trackingMat");
 save([savDir,'currList',num2str(vers),'.mat'], "currList");
@@ -220,8 +238,8 @@ save([savDir,'highLimit',num2str(vers),'.mat'], "highLimit");
 %% Check fit:
 Savefn = [savDir,'initialFit',num2str(vers),'.png'];
 generateFitFigure(Params, Params2, Params3,rawProc,...
-                    currList(1), currList(2),  currList(3),...
-                    currList(4), currList(5),  currList(6),Savefn,...
+                    BestVals(1), BestVals(2),  BestVals(3),...
+                    BestVals(4), BestVals(5),  BestVals(6),Savefn,...
                     gm_m, fft_gm_m, SamplingTable, SamplingTable2, SamplingTable3 )
 
 

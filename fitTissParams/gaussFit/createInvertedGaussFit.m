@@ -18,7 +18,7 @@ opts.Display = 'Off';
 % opts.StartPoint = [setA xData(2) xData(2)]; 
 % opts.Upper = [setA xData(3) Inf];
 
-opts.Lower = [setA*0.85 xData(1) 0];
+opts.Lower = [setA*0.95 xData(1) 0];
 opts.StartPoint = [setA xData(2) xData(2)]; 
 opts.Upper = [setA*1.05 xData(3) Inf];
 
