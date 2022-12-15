@@ -68,6 +68,9 @@ fitData1(:, all(isnan(fitData1),1)) = [];
 fitData1s = smoothdata( fitData1,2);
 fitData1s(10,:) = fitData1(10,:);
 
+% remove anything with really low B1:
+rawProc(:,rawProc(10,:) < 0.75) = [];
+rawProc(:,rawProc(10,:) > 1.1) = [];
 
 % viewIdx = 3;
 % figure; heatscatter(rawProc(10,:)', rawProc(viewIdx,:)'); %ylim([0 0.04]); xlim([0 15])

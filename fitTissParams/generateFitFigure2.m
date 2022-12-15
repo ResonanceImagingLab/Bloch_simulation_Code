@@ -90,9 +90,9 @@ heatscatter(b1, mat_ss(2,:)' );
 heatscatter(b1, mat_ss(3,:)' ); 
 hold on
 plot(x1_line,y1,'LineWidth',3); plot(x1_line,y2,'LineWidth',3); plot(x1_line,y3,'LineWidth',3)
-plot(fitData(10,:)', fitData(1,:)', "Color",'r',"LineWidth",2); 
-plot(fitData(10,:)', fitData(2,:)', "Color",'r',"LineWidth",2); 
-plot(fitData(10,:)', fitData(3,:)', "Color",'r',"LineWidth",2); 
+% plot(fitData(10,:)', fitData(1,:)', "Color",'r',"LineWidth",2); 
+% plot(fitData(10,:)', fitData(2,:)', "Color",'r',"LineWidth",2); 
+% plot(fitData(10,:)', fitData(3,:)', "Color",'r',"LineWidth",2); 
 xlim([0 1.3]) ; % ylim([0 0.04]) ;
 title('Dual');
 colorbar off
@@ -111,9 +111,9 @@ heatscatter(b1, mat_ss(5,:)' );
 heatscatter(b1, mat_ss(6,:)' ); 
 hold on
 plot(x1_line,y1,'LineWidth',3); plot(x1_line,y2,'LineWidth',3); plot(x1_line,y3,'LineWidth',3)
-plot(fitData(10,:)', fitData(4,:)', "Color",'r',"LineWidth",2); 
-plot(fitData(10,:)', fitData(5,:)', "Color",'r',"LineWidth",2); 
-plot(fitData(10,:)', fitData(6,:)', "Color",'r',"LineWidth",2); 
+% plot(fitData(10,:)', fitData(4,:)', "Color",'r',"LineWidth",2); 
+% plot(fitData(10,:)', fitData(5,:)', "Color",'r',"LineWidth",2); 
+% plot(fitData(10,:)', fitData(6,:)', "Color",'r',"LineWidth",2); 
 xlim([0 1.3]) ; % ylim([0 0.04]) ;
 title('Single')
 ax = gca; ax.FontSize = 20; 
