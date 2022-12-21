@@ -1,0 +1,39 @@
+The MRI data is on cynthia in:
+/home/bockn/Data/NSERC/raw/exam_13553 
+/home/bockn/Data/NSERC/processed/exam_13553
+
+ 
+
+The high contrast T1W images are now MPRAGEs like at the Siemens sites.  
+They are series 4 and 5.  
+
+The low contrast T1W image (i.e. the PDW image) is the same as last time.
+
+ 
+
+We are pretty sure the MPRAGE uses linear encoding on the GE.  
+
+TI is 1100ms, 
+TR: 2674.8, 
+flip angle: 12.
+Echospacing: 6.86ms
+
+T1W
+240x240x188
+Saggittal
+TE = 2.72
+TI = 1100
+188 SLICES
+FLIP ANGLE = 12
+TR: 2674.8,
+
+
+PDW
+240x240x188
+Saggittal
+TR = 7.5 MS
+TE = 2.848
+FLIP ANGLE = 4;
+
+
+
