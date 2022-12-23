@@ -46,10 +46,6 @@ if T1wInfo.TurboFactor == 98
         T1wInfo.TurboFactor = 96;
 end
 
-T1wSamplingTable = []; 
-if (LUT_str(1:3) == "GE2")
-    T1wSamplingTable = Step1_calculateKspaceSampling_v3 (T1wInfo);
-end
 
 
 %% The output LUT is the gridded interpolant of simulation values.

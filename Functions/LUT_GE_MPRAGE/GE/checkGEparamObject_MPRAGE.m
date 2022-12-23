@@ -1,4 +1,4 @@
-function checkGEparamObject(T1wInfo, PDwInfo )
+function checkGEparamObject_MPRAGE(T1wInfo, PDwInfo )
 
 % Check to make sure all the necessary parameters are filled in:
 %% T1w images

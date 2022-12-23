@@ -1,4 +1,4 @@
-function [T1wInfo, PDwInfo] = defaultGEparamObject(Params)
+function [T1wInfo, PDwInfo] = defaultGEparamObject_MPRAGE(Params)
 
 %% Standard GE parameters:
 Params = CalcImagingParams(Params);

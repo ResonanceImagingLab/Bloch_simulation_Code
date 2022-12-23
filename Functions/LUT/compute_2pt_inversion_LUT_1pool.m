@@ -136,7 +136,8 @@ ylabel('Ratio')
 zlabel('T_{1,obs} (ms)')
 ax = gca; ax.FontSize = 20; 
 set(gcf,'Position',[100 100 1000 800])
-view(-120,20)
+view(-90,90)
+colorbar
 %[az,el] = view
 
 saveas(gcf,strcat(LUTsavDir,'Figures/',LUT_str,'.png'))
