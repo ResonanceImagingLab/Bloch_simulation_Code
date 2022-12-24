@@ -1,12 +1,12 @@
 %% Compare gain factor:
 
 % from this, it looks like the scaling from the combined MPRAGE to PDw (2*MPRAGE/PDw ) is
-% 0.8947, split into 2. So PDw image has gain fact *2.23 compared to
-% MPRAGE.
+% 2.14 or ~2
 
 DataDir = 'C:\Users\chris\Downloads\TravelBrains\Mac\MPRAGE';
 
-imgName = {'T1w.nii', 'T1WLC.nii', 'MPRAGE.nii', 'B1_1.nii'};
+imgName = {'T1w_masked.nii', 'T1WLC.nii', 'T1WHC.nii', 'B1.nii',...
+    'B1_EPI.nii', 'ratio.nii'};
 
 for i = 1:length(imgName)
     img(:,:,:,i) = niftiread(fullfile(DataDir,imgName{i}));
@@ -26,16 +26,18 @@ figure; imagesc(pdw(:,:,100));colormap('gray')
 figure; imagesc(mpr(:,:,100));colormap('gray')
 figure; imagesc(b1(:,:,160));colormap('turbo')
 
-mask = zeros(size(t1w));
+mask = ones(size(mpr));
+mask(mpr> 400) = 0;
+mask(pdw> 400) = 0;
 
 
 nbins = 200;
 
 figure;
-histogram(t1w(mask >0),nbins,'FaceAlpha',0.3)
+histogram(mpr(mask >0),nbins,'FaceAlpha',0.3)
 hold on
 histogram(pdw(mask >0),nbins,'FaceAlpha',0.3)
-xlim([0 150])
+xlim([-50 450])
 
 ylim([0 0.2e6])
 legend
@@ -46,22 +48,23 @@ legend
 
 
 %% Do a better job with a fit:
-mask = zeros(size(t1w));
-mask(t1w<75) = 1;
-mask(pdw>75) = 0;
-mask(t1w<=0) = 0;
+mask = zeros(size(mpr));
+mask(mpr<100) = 1;
+mask(pdw>100) = 0;
+mask(mpr<=0) = 0;
 mask(pdw<=0) = 0;
 
 nbins = 25;
 
-[N1,edges1] = histcounts(t1w(mask >0),nbins);
+[N1,edges1] = histcounts(mpr(mask >0),nbins);
 [N2,edges2] = histcounts(pdw(mask >0),nbins);
 
 c1 = (edges1(2:end)+edges1(1:end-1))/2; 
 c2 = (edges2(2:end)+edges2(1:end-1))/2; 
 
 
-histogram(t1w(mask >0),nbins,'FaceAlpha',0.3)
+figure;histogram(mpr(mask >0),nbins,'FaceAlpha',0.3)
+figure; histogram(pdw(mask >0),nbins,'FaceAlpha',0.3)
 
 cftool
 

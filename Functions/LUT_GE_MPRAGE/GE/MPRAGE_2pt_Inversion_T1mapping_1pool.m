@@ -71,6 +71,10 @@ end
 %% With the LUT produced, turn the images into vectors then fit to the gridded interpolant
 
 if ~isempty(MPRAGE)
+
+    if isempty(mask)
+        mask = ones(size(PDw));
+    end
     q = find( (mask(:)>0));
     b1_v = B1_scale * abs(B1(q));
     signal_v = abs(MPRAGE(q)./ PDw(q));
