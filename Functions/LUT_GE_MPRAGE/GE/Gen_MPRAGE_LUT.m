@@ -40,78 +40,59 @@ Params.B0 = 3;
 Params.TissueType = 'WM';
 Params = DefaultCortexTissueParams(Params);
 [T1wInfo, PDwInfo] = defaultGEparamObject_MPRAGE(Params);
-T1map = MPRAGE_2pt_Inversion_T1mapping_1pool(T1wInfo, PDwInfo, [], [], [], [], LUTsavDir, lutPrefix );
+% T1map = MPRAGE_2pt_Inversion_T1mapping_1pool(T1wInfo, PDwInfo, [], [], [], [], LUTsavDir, lutPrefix );
 
 
 
-%% % In the future use the following to produce the T1map:
-%T1map = MPRAGE_2pt_Inversion_T1mapping_1pool(T1wInfo, PDwInfo, MPRAGE, PDw, B1, mask, LUTsavDir, lutPrefix);
-
-ratio = mpr./pdw;
-ratio(ratio<0) = 0;
-ratio(ratio >1.8) = 0;
-figure; imagesc(ratio(:,:,160));colormap('gray'); colorbar
-
-figure; imagesc(b1(:,:,160));colormap('gray'); colorbar
-
-scaleFactor = 1;
-b1temp = ones(size(ratio))*1.1;
-
-T1map = MPRAGE_2pt_Inversion_T1mapping_1pool(T1wInfo, PDwInfo, mpr/2, pdw, b12, [], LUTsavDir, lutPrefix);
-
-figure; imshow3Dfull(T1map, [400, 2500], turbo);
-
-
-figure; imshow3Dfull(b1,[0.5 2], jet);
-
-%% Test it:
-
-DataDir = 'C:\Users\chris\Downloads\TravelBrains\Mac\MPRAGE';
-
-imgName = {'T1w_masked.nii', 'T1WLC.nii', 'T1WHC.nii', 'B1.nii',...
-    'B1_EPI.nii', 'ratio.nii'};
-
-for i = 1:length(imgName)
-    img(:,:,:,i) = niftiread(fullfile(DataDir,imgName{i}));
-end
-
-img = double(img);
-
-%% Load each image and display
-
-t1w = img(:,:,:,1);
-pdw = img(:,:,:,2);
-mpr = img(:,:,:,3);
-b1 = img(:,:,:,4)/150;
-b12 = img(:,:,:,5);
-ratio = img(:,:,:,6);
-
-
-mask = zeros(size(mpr));
-mask(mpr>175) = 1;
-
-figure; imshow3Dfullseg(ratio,[0.5 2], mask);
-
-
-
-figure; imshow3Dfull(b1,[0.5 2], jet);
-figure; imshow3Dfull(b12,[0.5 2], jet);
-%figure; imshow3Dfull(ratio,[0.5 2], jet);
-figure; imshow3Dfull(mpr./pdw .*mask /2,[0.3 1.3], jet);
-%figure; imshow3Dfull(t1w./pdw,[0.5 2], jet);
-
-
-    q = find( (mask(:)>0));
-    b1_v = abs(b12(q));
-    signal_v = abs(mpr(q)./ pdw(q))/ 2 ;
-    
-    t1_v = LUT(b1_v,  signal_v);
-    t1_v(isnan(t1_v)) = 0;
-    T1map = zeros( size(pdw));
-    T1map(q) = t1_v;
-
-
-figure; imshow3Dfull(T1map,[400, 2500],jet);
+% 
+% %% Test it:
+% 
+% DataDir = 'C:\Users\chris\Downloads\TravelBrains\Mac\MPRAGE';
+% 
+% imgName = {'T1w_masked.nii', 'T1WLC.nii', 'T1WHC.nii', 'B1.nii',...
+%     'B1_EPI.nii', 'ratio.nii'};
+% 
+% for i = 1:length(imgName)
+%     img(:,:,:,i) = niftiread(fullfile(DataDir,imgName{i}));
+% end
+% 
+% img = double(img);
+% 
+% %% Load each image and display
+% 
+% t1w = img(:,:,:,1);
+% pdw = img(:,:,:,2);
+% mpr = img(:,:,:,3);
+% b1 = img(:,:,:,4)/150;
+% b12 = img(:,:,:,5);
+% ratio = img(:,:,:,6);
+% 
+% 
+% mask = zeros(size(mpr));
+% mask(mpr>175) = 1;
+% 
+% figure; imshow3Dfullseg(ratio,[0.5 2], mask);
+% 
+% 
+% 
+% figure; imshow3Dfull(b1,[0.5 2], jet);
+% figure; imshow3Dfull(b12,[0.5 2], jet);
+% %figure; imshow3Dfull(ratio,[0.5 2], jet);
+% figure; imshow3Dfull(mpr./pdw .*mask /2,[0.3 1.3], jet);
+% %figure; imshow3Dfull(t1w./pdw,[0.5 2], jet);
+% 
+% 
+%     q = find( (mask(:)>0));
+%     b1_v = abs(b12(q));
+%     signal_v = abs(mpr(q)./ pdw(q))/ 2 ;
+%     
+%     t1_v = LUT(b1_v,  signal_v);
+%     t1_v(isnan(t1_v)) = 0;
+%     T1map = zeros( size(pdw));
+%     T1map(q) = t1_v;
+% 
+% 
+% figure; imshow3Dfull(T1map,[400, 2500],jet);
 
 
 

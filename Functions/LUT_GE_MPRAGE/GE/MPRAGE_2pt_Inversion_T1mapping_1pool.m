@@ -24,7 +24,7 @@
 % MPRAGE = T1W_L(i,:);
 
 
-function T1map = MPRAGE_2pt_Inversion_T1mapping_1pool(T1wInfo, PDwInfo, MPRAGE, PDw, B1, mask, LUTsavDir, lutPrefix )
+function T1map = MPRAGE_2pt_Inversion_T1mapping_1pool(T1wInfo, PDwInfo, MPRAGE, PDw, B1, mask, LUTsavDir, lutPrefix, calcLUT )
 
 % Munsch et al 2021 mentioned a 95% b1 scaling for GE maps, upscale the lookup table to avoid downscaling values
 % Not needed for Siemens -> B1_scale = 0.95; 
@@ -55,15 +55,18 @@ LUT_str = strcat(lutPrefix, Readout, '_TI', num2str(TI), '_TR',num2str(TR), '_fl
 
 
 % Check if LUT exists for these parameters so that you do not need to recompute them.
-if isfile( strcat(LUTsavDir,LUT_str,'.mat'))
-    LUT = load(strcat(LUTsavDir,LUT_str,'.mat'));
+if isfile( fullfile(LUTsavDir, strcat(LUT_str,'.mat')))
+    LUT = load(fullfile(LUTsavDir, strcat(LUT_str,'.mat')));
     LUT = LUT.LUT;
-else
+
+elseif calcLUT
     
     disp('Creating new lookup table....')
     disp(LUT_str)
 
     LUT = compute_2pt_inversion_LUT_1pool(T1wInfo, PDwInfo, LUT_str, LUTsavDir, [], []);
+else 
+    error('Lookup table missing. Check filenames or contact Chris Rowley');
 
 end
 

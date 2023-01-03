@@ -3,7 +3,7 @@
 % from this, it looks like the scaling from the combined MPRAGE to PDw (2*MPRAGE/PDw ) is
 % 2.14 or ~2
 
-DataDir = 'C:\Users\chris\Downloads\TravelBrains\Mac\MPRAGE';
+DataDir = 'C:\Users\crowle1\OneDrive\MPRAGE';
 
 imgName = {'T1w_masked.nii', 'T1WLC.nii', 'T1WHC.nii', 'B1.nii',...
     'B1_EPI.nii', 'ratio.nii'};

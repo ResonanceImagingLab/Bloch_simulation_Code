@@ -1,15 +1,17 @@
-function [T1wInfo, PDwInfo] = defaultGEparamObject_MPRAGE(Params)
+function [T1wInfo, PDwInfo] = defaultGEparamObject_MPRAGE(Params, calcLUT)
 
 %% Standard GE parameters:
-Params = CalcImagingParams(Params);
-
-if ~isfield(Params,'WExcDur') % if not defined,assume spoiling in readout
-    Params.WExcDur = 0.1/1000;  %in seconds
+% Need these for calculating the LUT only.
+if calcLUT
+    Params = CalcImagingParams(Params);
+    
+    if ~isfield(Params,'WExcDur') % if not defined,assume spoiling in readout
+        Params.WExcDur = 0.1/1000;  %in seconds
+    end
+    
+    % GE specific spoiling value
+    Params.RFspoilingPhaseInc = 117;
 end
-
-% GE specific spoiling value
-Params.RFspoilingPhaseInc = 117;
-
 
 
 %% T1w images
