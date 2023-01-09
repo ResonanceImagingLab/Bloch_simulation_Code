@@ -133,6 +133,15 @@ Params.SatPulseShape = 'gausshann';
 Params.PulseOpt.bw = 0.3./Params.pulseDur; % override default Hann pulse shape.
 Params.TD_MT =  Params.TR_MT - Params.numSatPulse* (Params.pulseDur + Params.pulseGapDur) ;   
 
+Params.NumLines = 216;
+Params.NumPartitions = 192; 
+Params.Slices = 176;
+Params.Grappa = 1;
+Params.ReferenceLines = 32;
+Params.AccelerationFactor = 2;
+Params.Segments = []; 
+Params.ellipMask = 1;
+
 
 Params = CalcVariableImagingParams(Params);
 

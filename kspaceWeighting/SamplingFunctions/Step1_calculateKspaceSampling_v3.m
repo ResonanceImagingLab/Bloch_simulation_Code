@@ -56,6 +56,7 @@ if strcmp(Params.Readout, 'centric')
     end
     
     [outputSamplingTable, measuredElem, iSegments] = calcGeneratingFunctionTables_v3(AngleOrderFunc, RadiusOrderFunc,iNumElements,iTurboFactor,mask);
+    outputSamplingTable(mask == 0) = 0;
 
 elseif strcmp(Params.Readout, 'linear')
 
