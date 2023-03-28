@@ -36,7 +36,7 @@ if Params.B0 == 3
         Params.R1b = 0.25;
         Params.T2b = 11.1e-6;
         Params.Ra = [];
-        Params.M0b =  0.0155;
+        Params.M0b =  0.155;
         Params.D = 1e-3/1e6; % diffusion coefficient-> convert from mm^2/s to m^2/s
 
     else
