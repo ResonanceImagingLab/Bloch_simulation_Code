@@ -116,7 +116,7 @@ else
 
         satFlipAngle = Params.satFlipAngle;
 
-        if (B1_val < 0) 
+        if (satFlipAngle < 0) 
                 inputMag = 0;
             else
                 [inputMag, ~, ~] = BlochSimFlashSequence_v2(Params); % MT-weighted signal simulation    
