@@ -9,6 +9,7 @@ function Params = CR_SAR_scale_PulseHeight(Params)
 % flip = flip angle of excitation pulses (in degrees) 
 % TR = time (in seconds)
 
+
 if ~isfield(Params,'B0') % if not defined, assume 3T
     Params.B0 = 3; % main field strength (in Tesla)
 end
@@ -19,29 +20,31 @@ end
 
 if Params.B0 == 7
     if strcmp(Params.TransmitCoil, 'STX')
-        SAR_limit = 2.35; % Empirical value to match what I get at scanner
+        SAR_limit = 3; % Empirical value to match what I get at scanner
     end
+
+    empFact = -1.35e-5*Params.TR + 1.21e-3; % Rough estimate
+
 else
     SAR_limit = 3; %(W/kg)
+    empFact = 1.44e-3; % 3T
 end
     
-
+gam = 42.576e6;
 kg = 60; % reference weight
-w0 = 42.58e6 *Params.B0;
-epsilon = -1.35e-5*Params.TR + 2.21e-3;
+w0 = gam *Params.B0;
 
 
 %% Power = J/s. Multiply by pulse time to find J of work done
 % For Excitation pulse
 % (empiricalFactor*B1field^2) * numberPulses * time pulse
-excB1 = (Params.flipAngle) / (360* 42.58e6 * Params.WExcDur);
-J_exc = (epsilon * excB1^2 * w0^2)* (Params.numExcitation * Params.WExcDur); % Power (J/s) * time (s) = J
+excB1 = (Params.flipAngle) / (360* gam * Params.WExcDur);
+J_exc = (empFact * excB1^2 * w0^2)* (Params.numExcitation * Params.WExcDur); % Power (J/s) * time (s) = J
 
 Jsat = SAR_limit*Params.TR*kg - J_exc; % J/(s*kg) *s*kg = J - J = J
 
 if Jsat < 0
     Params.satRMS = 0;
-
 else
 
     if Params.boosted % modify for different definition of numSatPulse
@@ -56,6 +59,46 @@ else
     
     % Reorganize the Power equation to solve for B1 
     % B1 = sqrt(Psat/(epsilon*w0^2))
-    Params.satRMS = sqrt(Psat/(epsilon*w0^2));
+    % OLD WAY Params.satRMS = sqrt(Psat/(empFact*w0^2));
+end
+
+%% From here, calculate the flip angle based on the pulse shape and power
+Psat = Psat/(empFact*w0^2); % rescale with empirical factor.
+
+% Compute a temporary pulse to get the B1 integral from shape and duration
+% Following Soustelle et al 2022, integral = p2, power = p2*B1peak^2
+% Solve for peak, then scale normalized B1 and get integral for flipangle
+
+
+
+if strcmp(Params.SatPulseShape, 'hard')
+    Params.satFlipAngle = sqrt(Psat)*(360*gam*Params.pulseDur); 
+else
+
+    t = 0:Params.pulseDur/100:Params.pulseDur;
+
+    switch Params.SatPulseShape
+              
+        % Special cases
+        case 'gausshann'
+            PulseOpt.bw = 0.0002/Params.pulseDur; % override default Hann pulse shape.
+        otherwise
+            PulseOpt = [];
+    end
+
+    tempPulse = GetPulse(100, Params.delta, Params.pulseDur, ...
+    Params.SatPulseShape, PulseOpt);
+    
+    rf = tempPulse.('b1')(t);
+    p2 = trapz(t,rf.^2)/ Params.pulseDur; % See Soustelle et al 2022 for def.
+    B1peak = sqrt( Psat/p2);
+
+    Params.satFlipAngle = trapz( t, rf*B1peak)*gam * 360;
+    Params.satB1peak = B1peak*1e6; % convert to microTesla
 
 end
+
+
+% figure; plot(t, rf*B1peak*1e6)
+
+
