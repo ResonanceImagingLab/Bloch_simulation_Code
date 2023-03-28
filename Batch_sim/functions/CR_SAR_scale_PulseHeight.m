@@ -1,4 +1,4 @@
-function Params = CR_SAR_scale_PulseHeight(Params)
+function Params = CR_SAR_scale_PulseHeight(Params, B1peak_limit)
 % Uses SAR restrictions to give an estimate of the maximum pulse height 
 % that can be used for the saturation pulses
 % necessary parameters:
@@ -8,6 +8,7 @@ function Params = CR_SAR_scale_PulseHeight(Params)
 % numExc = number of excitation pulses
 % flip = flip angle of excitation pulses (in degrees) 
 % TR = time (in seconds)
+% B1peak_limit in microTesla
 
 
 if ~isfield(Params,'B0') % if not defined, assume 3T
@@ -69,36 +70,35 @@ Psat = Psat/(empFact*w0^2); % rescale with empirical factor.
 % Following Soustelle et al 2022, integral = p2, power = p2*B1peak^2
 % Solve for peak, then scale normalized B1 and get integral for flipangle
 
-
-
-if strcmp(Params.SatPulseShape, 'hard')
-    Params.satFlipAngle = sqrt(Psat)*(360*gam*Params.pulseDur); 
-else
-
-    t = 0:Params.pulseDur/100:Params.pulseDur;
-
-    switch Params.SatPulseShape
-              
+if ~isfield(Params,'PulseOpt')
+    switch Params.PulseOpt                
         % Special cases
         case 'gausshann'
-            PulseOpt.bw = 0.0002/Params.pulseDur; % override default Hann pulse shape.
+            Params.PulseOpt.bw = 0.0002/Params.pulseDur; % override default Hann pulse shape.
         otherwise
-            PulseOpt = [];
+            Params.PulseOpt = [];
     end
-
-    tempPulse = GetPulse(100, Params.delta, Params.pulseDur, ...
-    Params.SatPulseShape, PulseOpt);
-    
-    rf = tempPulse.('b1')(t);
-    p2 = trapz(t,rf.^2)/ Params.pulseDur; % See Soustelle et al 2022 for def.
-    B1peak = sqrt( Psat/p2);
-
-    Params.satFlipAngle = trapz( t, rf*B1peak)*gam * 360;
-    Params.satB1peak = B1peak*1e6; % convert to microTesla
-
 end
+
+t = 0:Params.pulseDur/100:Params.pulseDur;
+tempPulse = GetPulse(100, Params.delta, Params.pulseDur, ...
+Params.SatPulseShape, Params.PulseOpt);
+
+rf = tempPulse.('b1')(t);
+p2 = trapz(t,rf.^2)/ Params.pulseDur; % See Soustelle et al 2022 for def.
+B1peak = sqrt( Psat/p2);
+
+if B1peak > B1peak_limit % conform to hardware constraint
+    B1peak = B1peak_limit;
+end
+
+Params.satFlipAngle = trapz( t, rf*B1peak)*gam * 360;
+Params.satB1peak = B1peak*1e6; % convert to microTesla
 
 
 % figure; plot(t, rf*B1peak*1e6)
+
+
+
 
 
