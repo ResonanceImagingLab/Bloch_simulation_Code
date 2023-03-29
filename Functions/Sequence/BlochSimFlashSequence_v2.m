@@ -110,7 +110,7 @@ if Params.MTC
 
     PulseDur = ceil(Params.pulseDur/stepSize); % Break down pulse into rectangles
     %satPulse = MAMT_preparePulses2(Params); % Calculate time-varying pulse B1
-    alpha = satFlipAngle; % see CR_SAR_scale_PulseHeight.m
+    alpha = Params.satFlipAngle; % see CR_SAR_scale_PulseHeight.m
 
     if ~isfield(Params,'PulseOpt')
         Params.PulseOpt = [];

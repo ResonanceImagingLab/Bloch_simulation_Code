@@ -36,7 +36,7 @@
 % T1 maps and B1 maps
 
 % Simulate the sequence for a range of tissue parameters.
-% For set of tissue parameters, simulate for full range of B1rms
+% For set of tissue parameters, simulate for full range of satFlipAngle
 % Fit these simulated data points with a cubic polynomial of B1.
 
 % With a list of polynomials for each parameter set, calculate the residual
@@ -59,48 +59,49 @@
 % load( strcat( '/media/chris/SSD/Research/SeqDevelopment/CorticalihMT/cortical_ihMT_sim/kspaceWeighting\','GM_seg_MNI_152_image.mat'))
 % load( strcat( '/media/chris/SSD/Research/SeqDevelopment/CorticalihMT/cortical_ihMT_sim/kspaceWeighting\','GM_seg_MNI_152_kspace.mat'))
 
-cd 'C:\Users\crowle1\OneDrive - McGill University\ihMT_work\cortical_ihMT_sim\simCode\sim_wSpoil\RF_grad_diffusion_v4\Batch_sim'
+%cd 'C:\Users\crowle1\OneDrive - McGill University\ihMT_work\cortical_ihMT_sim\simCode\sim_wSpoil\RF_grad_diffusion_v4\Batch_sim'
 
 
 % Windows
 %addpath(genpath( 'E:\Research\SeqDevelopment\CorticalihMT\cortical_ihMT_sim\simCode' ))
-addpath(genpath('C:\Users\crowle1\OneDrive - McGill University\ihMT_work\cortical_ihMT_sim\simCode\sim_wSpoil\RF_grad_diffusion_v4')) % new sim code.
-addpath(genpath('C:\Users\crowle1\OneDrive - McGill University\ihMT_work\cortical_ihMT_sim\simCode\sim_wSpoil\qMRLab-master')) %using some of their code.
-addpath(genpath( 'E:\Research\Code\NeuroImagingMatlab\NeuroImagingMatlab')) % for limitHandler, and CR_calc_std_residuals
+addpath(genpath('E:\GitHub\Bloch_simulation_Code')) % new sim code.
+addpath(genpath('E:\GitHub\qMRLab-master')) %using some of their code.
+addpath(genpath( 'E:\GitHub\NeuroImagingMatlab\NeuroImagingMatlab')) % for limitHandler, and CR_calc_std_residuals
 
 %SavDir =  'E:\Research\SeqDevelopment\CorticalihMT\cortical_ihMT_sim\data\20220204_ihMT_3prot_test_boost\fitTissParams\';
-SavDir = 'C:\Users\crowle1\OneDrive - McGill University\ihMT_work\cortical_ihMT_sim\simCode\sim_wSpoil\RF_grad_diffusion_v4\fitTissParams\outputs\';
-load( strcat( 'E:\Research\SeqDevelopment\CorticalihMT\cortical_ihMT_sim\data\20220204_ihMT_3prot_test_boost\fitTissParams\','MTsat_vals2fit.mat'))   
-load( strcat( 'E:\Research\SeqDevelopment\CorticalihMT\cortical_ihMT_sim\data\20220204_ihMT_3prot_test_boost\fitTissParams\','MTsat_vals2fit_Mar16.mat'))
-load( strcat( 'C:\Users\crowle1\OneDrive - McGill University\ihMT_work\cortical_ihMT_sim\simCode\sim_wSpoil\RF_grad_diffusion_v4\kspaceWeighting\Atlas_reference\','GM_seg_MNI_152_image.mat'))
-load( strcat( 'C:\Users\crowle1\OneDrive - McGill University\ihMT_work\cortical_ihMT_sim\simCode\sim_wSpoil\RF_grad_diffusion_v4\kspaceWeighting\Atlas_reference\','GM_seg_MNI_152_kspace.mat'))
+SavDir = 'E:\GitHub\Bloch_simulation_Code\fitTissParams\outputs\';
+load( strcat( 'E:\GitHub\Bloch_simulation_Code\fitTissParams\','MTsat_vals2fit.mat'))   
+load( strcat( 'E:\GitHub\Bloch_simulation_Code\fitTissParams\','MTsat_vals2fit_Mar16.mat'))
+load( strcat('E:\GitHub\Bloch_simulation_Code\kspaceWeighting\Atlas_reference\','GM_seg_MNI_152_image.mat'))
+load( strcat('E:\GitHub\Bloch_simulation_Code\kspaceWeighting\Atlas_reference\','GM_seg_MNI_152_kspace.mat'))
 
 
-
-fit_version = '6p0_BSF'; % used as naming convention
+fit_version = '7p0_BSF'; % used as naming convention
 
 SavDir = [SavDir,fit_version,'/'];
 mkdir(SavDir)
 
 %% Start including a change log:
-logString= strcat('Complete rework with diffusion, spoiling, and whole brain sampling/scaling function.');
+logString= strcat('Rework for revision of manuscript.');
 
 fid = fopen(strcat(SavDir,'log.txt'),'wt');
 fprintf(fid, logString);
 fclose(fid);
 
 
-R = linspace(15,50,4);
+R = linspace(15,60,6);
 T2a = linspace(20e-3,90e-3,3);
 T1D =  [5e-4 1e-3 5e-3];% Varma 2017 was 6ms
 T2b = linspace(8e-6, 12e-6, 3);
 %M0b =  linspace(0.0475, 0.06, 5);  % include this to give all parameters a chance...
 M0b = [0.065, 0.07, 0.075]; 
-R1b = [0.25, 0.75, 1];  % can do brief sims with this one at end... Has very little impact on its own.
-B1rms = 0:2:18;
+R1b = [0.25];  % can do brief sims with this one at end... Has very little impact on its own.
+satFlipAngle = round(linspace(0, 220, 10));
 
 %simLength = length(R)* length(T2a)* length(T1D)* length(T2b)* length(M0b)* length(R1b);
 simLength2 = length(R)* length(T2a)* length(T1D)* length(T2b)* length(M0b)* length(R1b);
+
+gam = 42.576;
 
 %%
 % First set a couple of initial params, then fill defaults, then set the
@@ -125,7 +126,7 @@ Params.flipAngle = 5; % excitation flip angle water.
 Params.echoSpacing = 7.66/1000;
 Params.TD = Params.TR - (Params.numSatPulse *(Params.pulseDur+Params.pulseGapDur)) - (Params.numExcitation*Params.echoSpacing);
 Params.SatPulseShape = 'gausshann';
-Params.PulseOpt.bw = 0.3./Params.pulseDur; % override default Hann pulse shape.
+Params.PulseOpt.bw = 0.0002./Params.pulseDur; % override default Hann pulse shape.
 
 Params.DummyEcho = 2;
 Params.numExcitation = Params.numExcitation + Params.DummyEcho; % number of readout lines/TR WITH dummy
@@ -172,7 +173,7 @@ Params2.delta = 8000;
 Params2.flipAngle = 11; % excitation flip angle water.
 Params2.echoSpacing = 7.66/1000;
 Params2.SatPulseShape = 'gausshann';
-Params2.PulseOpt.bw = 0.3./Params2.pulseDur; % override default Hann pulse shape.
+Params2.PulseOpt.bw = 0.0002./Params2.pulseDur; % override default Hann pulse shape.
 
 Params2.DummyEcho = 2;
 Params2.numExcitation = Params2.numExcitation + Params2.DummyEcho; % number of readout lines/TR WITH dummy
@@ -199,7 +200,7 @@ Params3.delta = 8000;
 Params3.flipAngle = 7; % excitation flip angle water.
 Params3.echoSpacing = 7.66/1000;
 Params3.SatPulseShape = 'gausshann';
-Params3.PulseOpt.bw = 0.3./Params3.pulseDur; % override default Hann pulse shape.
+Params3.PulseOpt.bw = 0.0002./Params3.pulseDur; % override default Hann pulse shape.
 
 Params3.DummyEcho = 2;
 Params3.numExcitation = Params3.numExcitation + Params3.DummyEcho; % number of readout lines/TR WITH dummy
@@ -250,12 +251,12 @@ TF1 = Params.TurboFactor;
 TF2 = Params2.TurboFactor;
 TF3 = Params3.TurboFactor;
 
-Single_sig1_v7 = zeros( simLength2, TF1, length(B1rms));
-Single_sig2_v7 = zeros( simLength2, TF2, length(B1rms));
-Single_sig3_v7 = zeros( simLength2, TF3, length(B1rms));
-Dual_sig1_v7 = zeros( simLength2, TF1,  length(B1rms));
-Dual_sig2_v7 = zeros( simLength2, TF2, length(B1rms));
-Dual_sig3_v7 = zeros( simLength2, TF3, length(B1rms));
+Single_sig1_v7 = zeros( simLength2, TF1, length(satFlipAngle));
+Single_sig2_v7 = zeros( simLength2, TF2, length(satFlipAngle));
+Single_sig3_v7 = zeros( simLength2, TF3, length(satFlipAngle));
+Dual_sig1_v7 = zeros( simLength2, TF1,  length(satFlipAngle));
+Dual_sig2_v7 = zeros( simLength2, TF2, length(satFlipAngle));
+Dual_sig3_v7 = zeros( simLength2, TF3, length(satFlipAngle));
 
 % run the
 parpool
@@ -271,30 +272,30 @@ parfor qi = 1:simLength2
     t5 = parametersSet2(qi,5);
     t6 = parametersSet2(qi,6);
 
-    Ssig1 = zeros(TF1, length(B1rms) );
-    Ssig2 = zeros(TF2, length(B1rms) );
-    Ssig3 = zeros(TF3, length(B1rms) );
-    Dsig1 = zeros(TF1, length(B1rms) );
-    Dsig2 = zeros(TF2, length(B1rms) );
-    Dsig3 = zeros(TF3, length(B1rms) );
+    Ssig1 = zeros(TF1, length(satFlipAngle) );
+    Ssig2 = zeros(TF2, length(satFlipAngle) );
+    Ssig3 = zeros(TF3, length(satFlipAngle) );
+    Dsig1 = zeros(TF1, length(satFlipAngle) );
+    Dsig2 = zeros(TF2, length(satFlipAngle) );
+    Dsig3 = zeros(TF3, length(satFlipAngle) );
 
     for i = 1:10
-         [Ssig1(:,i),~, ~]  = BlochSimFlashSequence_v2(Params,'freqPattern', 'single', 'b1', B1rms(i),...
+         [Ssig1(:,i),~, ~]  = BlochSimFlashSequence_v2(Params,'freqPattern', 'single', 'satFlipAngle', satFlipAngle(i),...
              'R', t1, 'T2a', t2, 'T1D',t3, 'T2b', t4, 'M0b', t5, 'R1b', t6 ); 
                         
-         [Ssig2(:,i),~, ~]  = BlochSimFlashSequence_v2(Params2,'freqPattern', 'single', 'b1', B1rms(i),...
+         [Ssig2(:,i),~, ~]  = BlochSimFlashSequence_v2(Params2,'freqPattern', 'single', 'satFlipAngle', satFlipAngle(i),...
              'R', t1, 'T2a', t2, 'T1D',t3, 'T2b', t4, 'M0b', t5, 'R1b', t6 );
          
-         [Ssig3(:,i),~, ~]  = BlochSimFlashSequence_v2(Params3,'freqPattern', 'single', 'b1', B1rms(i),...
+         [Ssig3(:,i),~, ~]  = BlochSimFlashSequence_v2(Params3,'freqPattern', 'single', 'satFlipAngle', satFlipAngle(i),...
              'R', t1, 'T2a', t2, 'T1D',t3, 'T2b', t4, 'M0b', t5, 'R1b', t6 );
          
-         [Dsig1(:,i),~, ~]  = BlochSimFlashSequence_v2(Params,'freqPattern', 'dualAlternate', 'b1', B1rms(i),...
+         [Dsig1(:,i),~, ~]  = BlochSimFlashSequence_v2(Params,'freqPattern', 'dualAlternate', 'satFlipAngle', satFlipAngle(i),...
              'R', t1, 'T2a', t2, 'T1D',t3, 'T2b', t4, 'M0b', t5, 'R1b', t6 );
               
-         [Dsig2(:,i),~, ~]  = BlochSimFlashSequence_v2(Params2,'freqPattern', 'dualAlternate', 'b1', B1rms(i),...
+         [Dsig2(:,i),~, ~]  = BlochSimFlashSequence_v2(Params2,'freqPattern', 'dualAlternate', 'satFlipAngle', satFlipAngle(i),...
              'R', t1, 'T2a', t2, 'T1D',t3, 'T2b', t4, 'M0b', t5, 'R1b', t6 );
 
-         [Dsig3(:,i),~, ~]  = BlochSimFlashSequence_v2(Params3,'freqPattern', 'dualAlternate', 'b1', B1rms(i),...
+         [Dsig3(:,i),~, ~]  = BlochSimFlashSequence_v2(Params3,'freqPattern', 'dualAlternate', 'satFlipAngle', satFlipAngle(i),...
              'R', t1, 'T2a', t2, 'T1D',t3, 'T2b', t4, 'M0b', t5, 'R1b', t6 ); 
     end
                         
@@ -323,16 +324,16 @@ save(strcat(SavDir,'Dual_sig3_v7.mat'),'Dual_sig3_v7')
 
 %% Then from the excitation train values, determine the realized GM value.
 
-Single_sig1_gm_v7 = zeros( simLength2, length(B1rms));
-Single_sig2_gm_v7 = zeros( simLength2, length(B1rms));
-Single_sig3_gm_v7 = zeros( simLength2, length(B1rms));
-Dual_sig1_gm_v7 = zeros( simLength2,  length(B1rms));
-Dual_sig2_gm_v7 = zeros( simLength2, length(B1rms));
-Dual_sig3_gm_v7 = zeros( simLength2,  length(B1rms));
+Single_sig1_gm_v7 = zeros( simLength2, length(satFlipAngle));
+Single_sig2_gm_v7 = zeros( simLength2, length(satFlipAngle));
+Single_sig3_gm_v7 = zeros( simLength2, length(satFlipAngle));
+Dual_sig1_gm_v7 = zeros( simLength2,  length(satFlipAngle));
+Dual_sig2_gm_v7 = zeros( simLength2, length(satFlipAngle));
+Dual_sig3_gm_v7 = zeros( simLength2,  length(satFlipAngle));
 
 for i = 1:simLength2
-    %parfor j = 1:length(B1rms)
-    for j = 1:length(B1rms)
+    %parfor j = 1:length(satFlipAngle)
+    for j = 1:length(satFlipAngle)
 
         Single_sig1_gm_v7(i,j) = CR_generate_BSF_scaling_v1( squeeze(Single_sig1_v7(i,:,j)), Params, outputSamplingTable, gm_m, fft_gm_m) ;  
         Single_sig2_gm_v7(i,j) = CR_generate_BSF_scaling_v1(squeeze(Single_sig2_v7(i,:,j)), Params2, outputSamplingTable2, gm_m, fft_gm_m) ;
@@ -383,7 +384,7 @@ MTsat_sim_Dual3   = calcMTsatThruLookupTablewithDummyV3( Dual_sig3_gm,   [], T1o
 
 
 %% Debugging:
-%  B1rms = 0:2:18;
+%  satFlipAngle = 0:2:18;
 % 
 %  
 %  [outputSamplingTable2, elem, Params2.Segments] = Step1_calculateKspaceSampling_v3 (Params2);
@@ -397,13 +398,13 @@ MTsat_sim_Dual3   = calcMTsatThruLookupTablewithDummyV3( Dual_sig3_gm,   [], T1o
 % t6 = 15; %R
 %  t2 = 0.045; %M0b(e);
 %  
-% [~, ~, inputMag] = BlochSimFlashSequence_v2(Params2,'freqPattern', 'dualAlternate', 'b1', B1rms(i),'Rb', t1, 'M0b', t2, 'T2b',t3, 'T1D', t4, 'T2a', t5, 'R', t6 ); % MT-weighted signal simulation
+% [~, ~, inputMag] = BlochSimFlashSequence_v2(Params2,'freqPattern', 'dualAlternate', 'satFlipAngle', satFlipAngle(i),'Rb', t1, 'M0b', t2, 'T2b',t3, 'T1D', t4, 'T2a', t5, 'R', t6 ); % MT-weighted signal simulation
 % 
 % temp = CR_generate_BSF_scaling_v1(inputMag, Params2, outputSamplingTable2, gm_m, fft_gm_m)
 % temp1   = calcMTsatThruLookupTablewithDummyV3( temp,   [], 1.4.*1000, [], 1, Params2.echoSpacing * 1000, Params2.numExcitation, Params2.TR * 1000, Params2.flipAngle, Params2.DummyEcho)
 % 
 % 
-% inputMag1 = BlochSimFlashSequence_v2(Params3,'freqPattern', 'dualAlternate', 'b1', B1rms(i),'Rb', t1, 'M0b', t2, 'T2b',t3, 'T1D', t4, 'T2a', t5, 'R', t6 ); % MT-weighted signal simulation
+% inputMag1 = BlochSimFlashSequence_v2(Params3,'freqPattern', 'dualAlternate', 'satFlipAngle', satFlipAngle(i),'Rb', t1, 'M0b', t2, 'T2b',t3, 'T1D', t4, 'T2a', t5, 'R', t6 ); % MT-weighted signal simulation
 % temp2 = CR_generate_BSF_scaling_v1(inputMag1, Params3, outputSamplingTable3,  gm_m, fft_gm_m)
 % temp3   = calcMTsatThruLookupTablewithDummyV3( temp2,   [], 1.4.*1000, [], 1, Params3.echoSpacing * 1000, Params3.numExcitation, Params3.TR * 1000, Params3.flipAngle, Params3.DummyEcho)
 % 
@@ -433,12 +434,12 @@ tic % super fast, few seconds
 for i = 1:length(MTsat_sim_Dual1)
                     
      % With B1's simulated ->Fit polynomial: 
-     Single_c1(i,:) = polyfit(B1rms, MTsat_sim_Single1(i,:), fit_degree);
-     Single_c2(i,:) = polyfit(B1rms, MTsat_sim_Single2(i,:), fit_degree);
-     Single_c3(i,:) = polyfit(B1rms, MTsat_sim_Single3(i,:), fit_degree);
-     Dual_c1(i,:)   = polyfit(B1rms, MTsat_sim_Dual1(i,:), fit_degree);
-     Dual_c2(i,:)   = polyfit(B1rms, MTsat_sim_Dual2(i,:), fit_degree);
-     Dual_c3(i,:)   = polyfit(B1rms, MTsat_sim_Dual3(i,:), fit_degree);
+     Single_c1(i,:) = polyfit(satFlipAngle, MTsat_sim_Single1(i,:), fit_degree);
+     Single_c2(i,:) = polyfit(satFlipAngle, MTsat_sim_Single2(i,:), fit_degree);
+     Single_c3(i,:) = polyfit(satFlipAngle, MTsat_sim_Single3(i,:), fit_degree);
+     Dual_c1(i,:)   = polyfit(satFlipAngle, MTsat_sim_Dual1(i,:), fit_degree);
+     Dual_c2(i,:)   = polyfit(satFlipAngle, MTsat_sim_Dual2(i,:), fit_degree);
+     Dual_c3(i,:)   = polyfit(satFlipAngle, MTsat_sim_Dual3(i,:), fit_degree);
      
      % Try again using this: polyfitweighted, with the B1 as the weight!
      
@@ -450,7 +451,7 @@ toc
 % x1 = linspace(0,18,100);
 % y1 = polyval(Single_c1(i,:),x1);
 % figure
-% plot(B1rms, MTsat_sim_Single1(i,:),'o')
+% plot(satFlipAngle, MTsat_sim_Single1(i,:),'o')
 % hold on
 % plot(x1,y1)
 % hold off
@@ -470,10 +471,12 @@ mat_sort = exportMat( :, sortidx_b1);
 % Smooth matrix
 mat_ss = smoothdata( mat_sort,2, 'movmedian', 10);
 
-% Make sure you have B1rms values! Multiply B1 map by the B1rms of the sequence 
-b1_1 =11.4* mat_ss(10,:) ; 
-b1_2 = 13.3 * mat_ss(10,:) ; 
-b1_3 = 11.6*mat_ss(10,:) ; 
+% Make sure you have satFlipAngle values! Multiply B1 map by the satFlipAngle of the sequence 
+% Used to be B1, now it is the flip angle. This is how the sequence was
+% coded.
+b1_1 =(11.4*gam*360*Params.pulseDur)* mat_ss(10,:) ; 
+b1_2 = (13.3*gam*360*Params2.pulseDur)* mat_ss(10,:) ; 
+b1_3 = (11.6*gam*360*Params3.pulseDur)*mat_ss(10,:) ; 
 
 %% Quick plot of each to see that the data looks OK
 % figure; heatscatter(b1_1', mat_ss(1,:)'); %ylim([0 0.04]); xlim([0 15])
@@ -524,7 +527,7 @@ str = ['R = ',num2str(Top50sorted(1,1)),', T2a = ',num2str(Top50sorted(1,2)),...
   % Check first few, number 1 looked off here, 2 was better
   
 SortIndex = sortidx(1); % select the sorted line you want
-x1_line = linspace(0,18,100);
+x1_line = linspace(0,220,100);
 y1 = polyval( Dual_c1(SortIndex,:), x1_line);
 y2 = polyval( Dual_c2(SortIndex,:), x1_line);
 y3 = polyval( Dual_c3(SortIndex,:), x1_line);
@@ -588,10 +591,10 @@ mat_sort = exportMat2( :, sortidx_b1);
 % Smooth matrix
 mat_ss = smoothdata( mat_sort,2, 'movmedian', 10);
 
-% Make sure you have B1rms values! Multiply B1 map by the B1rms of the sequence 
-b1_1 =11.4* mat_ss(10,:) ; 
-b1_2 = 13.3 * mat_ss(10,:) ; 
-b1_3 = 11.6*mat_ss(10,:) ; 
+% Make sure you have satFlipAngle values! Multiply B1 map by the satFlipAngle of the sequence 
+b1_1 =(11.4*gam*360*Params.pulseDur)* mat_ss(10,:) ; 
+b1_2 = (13.3*gam*360*Params2.pulseDur)* mat_ss(10,:) ; 
+b1_3 = (11.6*gam*360*Params3.pulseDur)*mat_ss(10,:) ; 
 
 %% Quick plot of each to see that the data looks OK
 % figure; heatscatter(b1_1', mat_ss(1,:)'); %ylim([0 0.04]); xlim([0 15])
@@ -641,7 +644,7 @@ str = ['R = ',num2str(Top50sorted2(1,1)),', T2a = ',num2str(Top50sorted2(1,2)),.
   % Check first few, number 1 looked off here, 2 was better
   
 SortIndex = sortidx2(1); % select the sorted line you want
-x1_line = linspace(0,18,100);
+x1_line = linspace(0,220,100);
 y1 = polyval( Dual_c1(SortIndex,:), x1_line);
 y2 = polyval( Dual_c2(SortIndex,:), x1_line);
 y3 = polyval( Dual_c3(SortIndex,:), x1_line);
@@ -690,8 +693,6 @@ hold off
      
    
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   
-   load( strcat( 'C:\Users\crowle1\OneDrive - McGill University\ihMT_work\cortical_ihMT_sim\simCode\sim_wSpoil\RF_grad_diffusion_v4\kspaceWeighting\Atlas_reference\','GM_seg_MNI_152_image.mat'))
-load( strcat( 'C:\Users\crowle1\OneDrive - McGill University\ihMT_work\cortical_ihMT_sim\simCode\sim_wSpoil\RF_grad_diffusion_v4\kspaceWeighting\Atlas_reference\','GM_seg_MNI_152_kspace.mat'))
 
 
      
@@ -727,31 +728,31 @@ t4 = TParams(4);
 t5 = TParams(5);
 t6 = TParams(6);
 
-Single_sig1_f = zeros(  Params.TurboFactor, length(B1rms));
-Single_sig2_f = zeros(  Params2.TurboFactor, length(B1rms));
-Single_sig3_f = zeros(  Params3.TurboFactor, length(B1rms));
-Dual_sig1_f = zeros( Params.TurboFactor,  length(B1rms));
-Dual_sig2_f = zeros( Params2.TurboFactor, length(B1rms));
-Dual_sig3_f = zeros( Params3.TurboFactor, length(B1rms));
+Single_sig1_f = zeros(  Params.TurboFactor, length(satFlipAngle));
+Single_sig2_f = zeros(  Params2.TurboFactor, length(satFlipAngle));
+Single_sig3_f = zeros(  Params3.TurboFactor, length(satFlipAngle));
+Dual_sig1_f = zeros( Params.TurboFactor,  length(satFlipAngle));
+Dual_sig2_f = zeros( Params2.TurboFactor, length(satFlipAngle));
+Dual_sig3_f = zeros( Params3.TurboFactor, length(satFlipAngle));
 
 
 parfor i = 1:10
-     [Ssig1,~, ~]  = BlochSimFlashSequence_v2(Params,'freqPattern', 'single', 'b1', B1rms(i),...
+     [Ssig1,~, ~]  = BlochSimFlashSequence_v2(Params,'freqPattern', 'single', 'satFlipAngle', satFlipAngle(i),...
          'R', t1, 'T2a', t2, 'T1D',t3, 'T2b', t4, 'M0b', t5, 'R1b', t6 );           
 
-     [Ssig2,~, ~]  = BlochSimFlashSequence_v2(Params2,'freqPattern', 'single', 'b1', B1rms(i),...
+     [Ssig2,~, ~]  = BlochSimFlashSequence_v2(Params2,'freqPattern', 'single', 'satFlipAngle', satFlipAngle(i),...
          'R', t1, 'T2a', t2, 'T1D',t3, 'T2b', t4, 'M0b', t5, 'R1b', t6 );
 
-     [Ssig3,~, ~]  = BlochSimFlashSequence_v2(Params3,'freqPattern', 'single', 'b1', B1rms(i),...
+     [Ssig3,~, ~]  = BlochSimFlashSequence_v2(Params3,'freqPattern', 'single', 'satFlipAngle', satFlipAngle(i),...
          'R', t1, 'T2a', t2, 'T1D',t3, 'T2b', t4, 'M0b', t5, 'R1b', t6 );
 
-     [Dsig1,~, ~]  = BlochSimFlashSequence_v2(Params,'freqPattern', 'dualAlternate', 'b1', B1rms(i),...
+     [Dsig1,~, ~]  = BlochSimFlashSequence_v2(Params,'freqPattern', 'dualAlternate', 'satFlipAngle', satFlipAngle(i),...
          'R', t1, 'T2a', t2, 'T1D',t3, 'T2b', t4, 'M0b', t5, 'R1b', t6 );
 
-     [Dsig2,~, ~]  = BlochSimFlashSequence_v2(Params2,'freqPattern', 'dualAlternate', 'b1', B1rms(i),...
+     [Dsig2,~, ~]  = BlochSimFlashSequence_v2(Params2,'freqPattern', 'dualAlternate', 'satFlipAngle', satFlipAngle(i),...
          'R', t1, 'T2a', t2, 'T1D',t3, 'T2b', t4, 'M0b', t5, 'R1b', t6 );
 
-     [Dsig3,~, ~]  = BlochSimFlashSequence_v2(Params3,'freqPattern', 'dualAlternate', 'b1', B1rms(i),...
+     [Dsig3,~, ~]  = BlochSimFlashSequence_v2(Params3,'freqPattern', 'dualAlternate', 'satFlipAngle', satFlipAngle(i),...
          'R', t1, 'T2a', t2, 'T1D',t3, 'T2b', t4, 'M0b', t5, 'R1b', t6 ); 
 
      % store values
@@ -765,15 +766,15 @@ parfor i = 1:10
 end
 
 
-Single_sig1_gm_f = zeros(length(B1rms),1);
-Single_sig2_gm_f = zeros(length(B1rms),1);
-Single_sig3_gm_f = zeros(length(B1rms),1);
-Dual_sig1_gm_f = zeros(length(B1rms),1);
-Dual_sig2_gm_f = zeros(length(B1rms),1);
-Dual_sig3_gm_f = zeros(length(B1rms),1);
+Single_sig1_gm_f = zeros(length(satFlipAngle),1);
+Single_sig2_gm_f = zeros(length(satFlipAngle),1);
+Single_sig3_gm_f = zeros(length(satFlipAngle),1);
+Dual_sig1_gm_f = zeros(length(satFlipAngle),1);
+Dual_sig2_gm_f = zeros(length(satFlipAngle),1);
+Dual_sig3_gm_f = zeros(length(satFlipAngle),1);
 
 % calculate values based on full k-space data
-for j = 1:length(B1rms)
+for j = 1:length(satFlipAngle)
     Single_sig1_gm_f(j) = CR_generate_BSF_scaling_v1( squeeze(Single_sig1_f(:,j)), Params, outputSamplingTable, gm_m, fft_gm_m) ;  
     Single_sig2_gm_f(j) = CR_generate_BSF_scaling_v1(squeeze(Single_sig2_f(:,j)), Params2, outputSamplingTable2, gm_m, fft_gm_m) ;
     Single_sig3_gm_f(j) = CR_generate_BSF_scaling_v1(squeeze(Single_sig3_f(:,j)), Params3, outputSamplingTable3, gm_m, fft_gm_m) ;
@@ -796,12 +797,12 @@ MTsat_sim_Dual2_f   = calcMTsatThruLookupTablewithDummyV3( Dual_sig2_gm_f,   [],
 MTsat_sim_Dual3_f   = calcMTsatThruLookupTablewithDummyV3( Dual_sig3_gm_f,   [], T1obs, [], M0_app_v, Params3.echoSpacing * 1000, Params3.numExcitation, Params3.TR * 1000, Params3.flipAngle, Params3.DummyEcho);
 
 % fit the simulations with a polynomial
-Single_c1_f = polyfit(B1rms, MTsat_sim_Single1_f, fit_degree);
-Single_c2_f = polyfit(B1rms, MTsat_sim_Single2_f, fit_degree);
-Single_c3_f = polyfit(B1rms, MTsat_sim_Single3_f, fit_degree);
-Dual_c1_f   = polyfit(B1rms, MTsat_sim_Dual1_f, fit_degree);
-Dual_c2_f   = polyfit(B1rms, MTsat_sim_Dual2_f, fit_degree);
-Dual_c3_f   = polyfit(B1rms, MTsat_sim_Dual3_f, fit_degree);
+Single_c1_f = polyfit(satFlipAngle, MTsat_sim_Single1_f, fit_degree);
+Single_c2_f = polyfit(satFlipAngle, MTsat_sim_Single2_f, fit_degree);
+Single_c3_f = polyfit(satFlipAngle, MTsat_sim_Single3_f, fit_degree);
+Dual_c1_f   = polyfit(satFlipAngle, MTsat_sim_Dual1_f, fit_degree);
+Dual_c2_f   = polyfit(satFlipAngle, MTsat_sim_Dual2_f, fit_degree);
+Dual_c3_f   = polyfit(satFlipAngle, MTsat_sim_Dual3_f, fit_degree);
 
 % combine both scatterplots
 
@@ -814,11 +815,10 @@ mat_sort = exportMat( :, sortidx_b1);
 % Smooth matrix
 mat_ss1 = smoothdata( mat_sort,2, 'movmedian', 10);
 
-% Make sure you have B1rms values! Multiply B1 map by the B1rms of the sequence 
-b1_1_1 =11.4* mat_ss1(10,:) ; 
-b1_2_1 = 13.3 * mat_ss1(10,:) ; 
-b1_3_1 = 11.6*mat_ss1(10,:) ; 
-
+% Make sure you have satFlipAngle values! Multiply B1 map by the satFlipAngle of the sequence 
+b1_1_1 = (11.4*gam*360*Params.pulseDur)* mat_ss1(10,:) ; 
+b1_2_1 = (13.3*gam*360*Params2.pulseDur) * mat_ss1(10,:) ; 
+b1_3_1 = (11.6*gam*360*Params3.pulseDur)*mat_ss1(10,:) ; 
 
 % stack matrices:
 % Sort B1 , then sat values, then smooth them
@@ -830,10 +830,10 @@ mat_sort = exportMat2( :, sortidx_b1);
 % Smooth matrix
 mat_ss2 = smoothdata( mat_sort,2, 'movmedian', 10);
 
-% Make sure you have B1rms values! Multiply B1 map by the B1rms of the sequence 
-b1_1_2 =11.4* mat_ss2(10,:) ; 
-b1_2_2 = 13.3 * mat_ss2(10,:) ; 
-b1_3_2 = 11.6*mat_ss2(10,:) ; 
+% Make sure you have satFlipAngle values! Multiply B1 map by the satFlipAngle of the sequence 
+b1_1_2 = (11.4*gam*360*Params.pulseDur)* mat_ss2(10,:) ; 
+b1_2_2 = (13.3*gam*360*Params.pulseDur) * mat_ss2(10,:) ; 
+b1_3_2 = (11.6*gam*360*Params.pulseDur)*mat_ss2(10,:) ; 
 
 
 % concatenate:
@@ -846,7 +846,7 @@ mat_ss = [mat_ss1, mat_ss2];
 
 
 %% Now plot the results
-x1_line = linspace(0,18,100);
+x1_line = linspace(0,220,100);
 y1 = polyval( Dual_c1_f, x1_line);
 y2 = polyval( Dual_c2_f, x1_line);
 y3 = polyval( Dual_c3_f, x1_line);
