@@ -66,7 +66,7 @@
 %addpath(genpath( 'E:\Research\SeqDevelopment\CorticalihMT\cortical_ihMT_sim\simCode' ))
 addpath(genpath('E:\GitHub\Bloch_simulation_Code')) % new sim code.
 addpath(genpath('E:\GitHub\qMRLab-master')) %using some of their code.
-addpath(genpath( 'E:\GitHub\NeuroImagingMatlab\NeuroImagingMatlab')) % for limitHandler, and CR_calc_std_residuals
+addpath(genpath( 'E:\GitHub\NeuroImagingMatlab\Display')) % for limitHandler, and CR_calc_std_residuals
 
 %SavDir =  'E:\Research\SeqDevelopment\CorticalihMT\cortical_ihMT_sim\data\20220204_ihMT_3prot_test_boost\fitTissParams\';
 SavDir = 'E:\GitHub\Bloch_simulation_Code\fitTissParams\outputs\';
@@ -76,7 +76,7 @@ load( strcat('E:\GitHub\Bloch_simulation_Code\kspaceWeighting\Atlas_reference\',
 load( strcat('E:\GitHub\Bloch_simulation_Code\kspaceWeighting\Atlas_reference\','GM_seg_MNI_152_kspace.mat'))
 
 
-fit_version = '7p0_BSF'; % used as naming convention
+fit_version = '7p1_BSF'; % used as naming convention
 
 SavDir = [SavDir,fit_version,'/'];
 mkdir(SavDir)
@@ -89,13 +89,25 @@ fprintf(fid, logString);
 fclose(fid);
 
 
-R = linspace(15,60,6);
-T2a = linspace(20e-3,90e-3,3);
-T1D =  [5e-4 1e-3 5e-3];% Varma 2017 was 6ms
-T2b = linspace(8e-6, 12e-6, 3);
-%M0b =  linspace(0.0475, 0.06, 5);  % include this to give all parameters a chance...
-M0b = [0.065, 0.07, 0.075]; 
-R1b = [0.25];  % can do brief sims with this one at end... Has very little impact on its own.
+R = linspace(40,60,5);
+T2a = 60e-3;
+T1D =  linspace(0.7e-3,1.1e-3,5);% Varma 2017 was 6ms
+T2b = linspace(10.5e-6, 11.5e-6, 3);
+M0b =  linspace(0.065, 0.072, 4);  % include this to give all parameters a chance...
+%M0b = [0.065, 0.07, 0.075]; 
+R1b = 0.25; 
+
+% v7_0
+% R = linspace(15,60,6);
+% T2a = linspace(20e-3,90e-3,3);
+% T1D =  [5e-4 1e-3 5e-3];% Varma 2017 was 6ms
+% T2b = linspace(8e-6, 12e-6, 3);
+% M0b =  linspace(0.0475, 0.06, 5);  % include this to give all parameters a chance...
+% %M0b = [0.065, 0.07, 0.075]; 
+% R1b = 0.25; 
+
+
+
 satFlipAngle = round(linspace(0, 220, 10));
 
 %simLength = length(R)* length(T2a)* length(T1D)* length(T2b)* length(M0b)* length(R1b);
@@ -359,14 +371,23 @@ save(strcat(SavDir,'Dual_sig3_gm_v7.mat'),'Dual_sig3_gm_v7')
 % load( strcat(SavDir,'Dual_sig3_gm_v7.mat'))
 
 
-Single_sig1_gm = vertcat(Single_sig1_gm, Single_sig1_gm_v7);
-Single_sig2_gm = vertcat(Single_sig2_gm, Single_sig2_gm_v7);
-Single_sig3_gm = vertcat(Single_sig3_gm, Single_sig3_gm_v7);
-Dual_sig1_gm = vertcat(Dual_sig1_gm, Dual_sig1_gm_v7);
-Dual_sig2_gm = vertcat(Dual_sig2_gm, Dual_sig2_gm_v7); 
-Dual_sig3_gm = vertcat(Dual_sig3_gm, Dual_sig3_gm_v7); 
+% Single_sig1_gm = vertcat(Single_sig1_gm, Single_sig1_gm_v7);
+% Single_sig2_gm = vertcat(Single_sig2_gm, Single_sig2_gm_v7);
+% Single_sig3_gm = vertcat(Single_sig3_gm, Single_sig3_gm_v7);
+% Dual_sig1_gm = vertcat(Dual_sig1_gm, Dual_sig1_gm_v7);
+% Dual_sig2_gm = vertcat(Dual_sig2_gm, Dual_sig2_gm_v7); 
+% Dual_sig3_gm = vertcat(Dual_sig3_gm, Dual_sig3_gm_v7); 
 
-parametersSet2 =   vertcat(parametersSet, parametersSet2);
+Single_sig1_gm = vertcat( Single_sig1_gm_v7);
+Single_sig2_gm = vertcat( Single_sig2_gm_v7);
+Single_sig3_gm = vertcat( Single_sig3_gm_v7);
+Dual_sig1_gm = vertcat( Dual_sig1_gm_v7);
+Dual_sig2_gm = vertcat( Dual_sig2_gm_v7); 
+Dual_sig3_gm = vertcat( Dual_sig3_gm_v7); 
+% 
+% parametersSet2 =   vertcat(parametersSet, parametersSet2);
+
+parametersSet2 =   vertcat( parametersSet2);
 
 %% Calculate MTsat on the whole matrix of signal values.
 T1obs = ones(size(Dual_sig3_gm)) .* 1.4.*1000;
@@ -384,7 +405,7 @@ MTsat_sim_Dual3   = calcMTsatThruLookupTablewithDummyV3( Dual_sig3_gm,   [], T1o
 
 
 %% Debugging:
-%  satFlipAngle = 0:2:18;
+%  satFlipAngle = 0:2:220;
 % 
 %  
 %  [outputSamplingTable2, elem, Params2.Segments] = Step1_calculateKspaceSampling_v3 (Params2);
@@ -448,7 +469,7 @@ toc
 
 % % Can do a quick check if you want!
 % i = 1;
-% x1 = linspace(0,18,100);
+% x1 = linspace(0,220,100);
 % y1 = polyval(Single_c1(i,:),x1);
 % figure
 % plot(satFlipAngle, MTsat_sim_Single1(i,:),'o')
@@ -518,15 +539,16 @@ Top50sortedTable = array2table(Top50sorted, 'VariableNames',{'R', 'T2a', 'T1D', 
 
 save(strcat(SavDir,'Top50sortedTable.mat'),'Top50sortedTable')      
 
+  
 
-str = ['R = ',num2str(Top50sorted(1,1)),', T2a = ',num2str(Top50sorted(1,2)),...
-    ', T1D = ',num2str(Top50sorted(1,3)), ', T2b =',num2str(Top50sorted(1,4)),...
-    ', M0b = ',num2str(Top50sorted(1,5)),', R1b = ',num2str(Top50sorted(1,6))];
+SortIndex = sortidx(10); % select the sorted line you want
+str = ['R = ',num2str(Top50sorted(SortIndex,1)),', T2a = ',num2str(Top50sorted(SortIndex,2)),...
+    ', T1D = ',num2str(Top50sorted(SortIndex,3)), ', T2b =',num2str(Top50sorted(SortIndex,4)),...
+    ', M0b = ',num2str(Top50sorted(SortIndex,5)),', R1b = ',num2str(Top50sorted(SortIndex,6))];
                          
 % Check what the top one looks like with the data!      
   % Check first few, number 1 looked off here, 2 was better
-  
-SortIndex = sortidx(1); % select the sorted line you want
+
 x1_line = linspace(0,220,100);
 y1 = polyval( Dual_c1(SortIndex,:), x1_line);
 y2 = polyval( Dual_c2(SortIndex,:), x1_line);
@@ -542,7 +564,7 @@ heatscatter(b1_2', mat_ss(2,:)' );
 heatscatter(b1_3', mat_ss(3,:)' ); 
 hold on
 plot(x1_line,y1,'LineWidth',3); plot(x1_line,y2,'LineWidth',3); plot(x1_line,y3,'LineWidth',3)
-xlim([0 18]) ; % ylim([0 0.04]) ;
+xlim([0 220]) ; % ylim([0 0.04]) ;
 title('Dual');
 colorbar off
 ax = gca; ax.FontSize = 20; 
@@ -560,7 +582,7 @@ heatscatter(b1_2', mat_ss(5,:)' );
 heatscatter(b1_3', mat_ss(6,:)' ); 
 hold on
 plot(x1_line,y1,'LineWidth',3); plot(x1_line,y2,'LineWidth',3); plot(x1_line,y3,'LineWidth',3)
-xlim([0 18]) ; % ylim([0 0.04]) ;
+xlim([0 220]) ; % ylim([0 0.04]) ;
 title('Single')
 ax = gca; ax.FontSize = 20; 
 colorbar off
@@ -572,10 +594,15 @@ hold off
 
    saveas(gcf,strcat(SavDir,'initial_best_parameters_fit2Optimal.png'))  
      
-     
-     
-   
-   
+ 
+ %%
+ % Quick look at the results:
+figure; histogram(Top50sorted(1:60,1)) % pretty even
+figure; histogram(Top50sorted(1:60,2)) % pretty even
+figure; histogram(Top50sorted(1:60,3)) % none at 5ms, closer to 1
+figure; histogram(Top50sorted(1:60,4)) % between 10 and 12
+figure; histogram(Top50sorted(1:60,5)) % pretty even
+figure; histogram(Top50sorted(1:60,6)) % all 0.25  
    
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    
@@ -659,7 +686,7 @@ heatscatter(b1_2', mat_ss(2,:)' );
 heatscatter(b1_3', mat_ss(3,:)' ); 
 hold on
 plot(x1_line,y1,'LineWidth',3); plot(x1_line,y2,'LineWidth',3); plot(x1_line,y3,'LineWidth',3)
-xlim([0 18]) ; % ylim([0 0.04]) ;
+xlim([0 220]) ; % ylim([0 0.04]) ;
 title('Dual');
 colorbar off
 ax = gca; ax.FontSize = 20; 
@@ -677,7 +704,7 @@ heatscatter(b1_2', mat_ss(5,:)' );
 heatscatter(b1_3', mat_ss(6,:)' ); 
 hold on
 plot(x1_line,y1,'LineWidth',3); plot(x1_line,y2,'LineWidth',3); plot(x1_line,y3,'LineWidth',3)
-xlim([0 18]) ; % ylim([0 0.04]) ;
+xlim([0 220]) ; % ylim([0 0.04]) ;
 title('Single')
 ax = gca; ax.FontSize = 20; 
 colorbar off
@@ -689,10 +716,31 @@ hold off
 
    saveas(gcf,strcat(SavDir,'initial_best_parameters_fit2Optimal_2.png'))  
      
-     
+figure; histogram(Top50sorted2(1:60,1)) % pretty even 24--60
+figure; histogram(Top50sorted2(1:60,2)) % pretty even
+figure; histogram(Top50sorted2(1:60,3)) % none at 5ms, closer to 1
+figure; histogram(Top50sorted2(1:60,4)) % between 10 and 12
+figure; histogram(Top50sorted2(1:60,5)) % pretty even
+figure; histogram(Top50sorted2(1:60,6)) % all 0.25     
      
    
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
      
@@ -718,7 +766,7 @@ TParams = [ 50;...      % R
             50e-3;...   % T2a
             0.75e-3;...    % T1D
             11.5e-6;...  % T2b
-            0.071;...   % M0b
+            0.07;...   % M0b
            0.25];         % R1b
     
 t1 = TParams(1);
@@ -863,7 +911,7 @@ heatscatter(b1_2', mat_ss(2,:)' );
 heatscatter(b1_3', mat_ss(3,:)' ); 
 hold on
 plot(x1_line,y1,'LineWidth',3); plot(x1_line,y2,'LineWidth',3); plot(x1_line,y3,'LineWidth',3)
-xlim([0 18]) ; % ylim([0 0.04]) ;
+xlim([0 220]) ; % ylim([0 0.04]) ;
 title('Dual');
 colorbar off
 ax = gca; ax.FontSize = 20; 
@@ -881,7 +929,7 @@ heatscatter(b1_2', mat_ss(5,:)' );
 heatscatter(b1_3', mat_ss(6,:)' ); 
 hold on
 plot(x1_line,y1,'LineWidth',3); plot(x1_line,y2,'LineWidth',3); plot(x1_line,y3,'LineWidth',3)
-xlim([0 18]) ; % ylim([0 0.04]) ;
+xlim([0 220]) ; % ylim([0 0.04]) ;
 title('Single')
 ax = gca; ax.FontSize = 20; 
 colorbar off
@@ -891,7 +939,7 @@ hold off
         
 
 
-saveas(gcf,strcat(SavDir,'temp/Final_best_parameters_fit2Optimal_',num2str(idx),'.png'))  
+saveas(gcf,strcat(SavDir,'Final_best_parameters_fit2Optimal_',num2str(idx),'.png'))  
 idx = idx+1;    
      
 
