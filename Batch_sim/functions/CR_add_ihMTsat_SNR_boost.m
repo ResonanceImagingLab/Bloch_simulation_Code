@@ -1,17 +1,18 @@
-function output = CR_add_ihMTsat_SNR_boost(simResultsB, ParameterSet, noiseLvl, T1, MP2RAGE)
+function output = CR_add_ihMTsat_SNR_boost(simResultsB, ParameterSet, DATADIR, ...
+    noiseLvl, T1, MP2RAGE)
 % breaks up the simResultsB becuase my computer keeps crashing when
 % running the whole thing. Do in 10 steps, save each step, then combine for
 % the output. 
 
-DATADIR = '/data_/tardiflab/chris/development/scripts/Deichman2000_backup/cortical_ihMT_sim/sim_wSpoil/RF_grad_diffusion_v4/Batch_sim/3T_v1/';
+%DATADIR = '/data_/tardiflab/chris/development/scripts/Deichman2000_backup/cortical_ihMT_sim/sim_wSpoil/RF_grad_diffusion_v4/Batch_sim/3T_v1/';
 
-if nargin < 3 || isempty(noiseLvl)
+if nargin < 4 || isempty(noiseLvl)
   noiseLvl = 0.0005; 
 end
-if nargin < 4 || isempty(T1)
+if nargin < 5 || isempty(T1)
   T1 = 1.4;
 end
-if nargin < 5 || isempty(MP2RAGE)
+if nargin < 6 || isempty(MP2RAGE)
     MP2RAGE.B0=3;           % in Tesla
     MP2RAGE.TR=5;           % MP2RAGE TR in seconds 
     MP2RAGE.TRFLASH=6.4e-3; % TR of the GRE readout
