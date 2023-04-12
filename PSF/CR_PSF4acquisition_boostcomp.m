@@ -10,7 +10,7 @@ baseDir = '/path/to/OptimizeIHMTimaging/';
 SavDir =  '/path/to/figures/';
 
 baseDir = 'C:\Users\chris\OneDrive - McGill University\ihMT_work\cortical_ihMT_sim\simCode\sim_wSpoil\RF_grad_diffusion_v4';
-SavDir = 'C:\Users\chris\OneDrive - McGill University\ihMT_work\cortical_ihMT_sim\simCode\sim_wSpoil\RF_grad_diffusion_v4\PSF\figures\';
+SavDir = 'E:\GitHub\Bloch_simulation_Code\PSF\figures_r3\';
 
 SaveImgs = 1; % binary flag for whether to save output figures
 
@@ -23,10 +23,10 @@ psf_Ref_values = zeros(length(turboFactor), 21601);
 
 for z = 1:length(turboFactor)
     
-     
+     clear Params
     %% Step 1 -> simulate the sequence and return the longitudinal magnetization for a full TR
     % This also grabs tissue parameters from DefaultCortexTissueParams()
-    Params = CR_getSeqParams( turboFactor(z) ); 
+    Params = CR_getSeqParams_r3( turboFactor(z) ); 
 
     % Single
     SingleMag = BlochSimFlashSequence_v2(Params);
@@ -122,7 +122,7 @@ for z = 1:length(turboFactor)
     set(gcf,'position',[100,100,600,500])
     legend( 'Single', 'Dual', 'ihMTR')
 
-    if SaveImgs; saveas(gcf,fullfile(SavDir,'PSF_slice_',num2str(Params.TurboFactor),'turbofactor.png')); end
+    if SaveImgs; saveas(gcf,fullfile(SavDir,['PSF_slice_',num2str(Params.TurboFactor),'turbofactor.png'])); end
 
     
     % save the ihMT one to look at between turbo factors after!
@@ -276,7 +276,7 @@ end
 FWHM = x1(2,:) - x1(1,:); 
 
 % The SNR values will come from my simulation results. Just list them here:
-SNR = [ 7.209, 5.8235, 4.225,4.002, 3.595, 2.2965  ];
+SNR = [ 7.1127, 5.8694, 4.5771,3.6052, 2.7914, 1.93  ];
 % Lets add a linear line that corresponds to the linear increase in SNR
 % from voxel size alone. 
 m = SNR(end)/FWHM(end);
@@ -302,7 +302,7 @@ for i = 1:v
     %scatter(FWHM(i), SNR(i), 125,clrVal,'filled')
 end
 refline(m,b)
-text(2.4,3.5,["Equivalent", "SNR/Volume"], 'FontSize',18)
+text(2.4,2.8,["Equivalent", "SNR/Volume"], 'FontSize',18)
 scatter(FWHM(i), SNR(i), 125,clrVal,'filled')
 ax = gca;    ax.FontSize = 20; 
 set(gcf,'position',[100,100,800,600])
@@ -313,9 +313,6 @@ xline(1,'--',{'Nominal','Resolution'},'Color',[0 0.0 0],'LineWidth',2,'FontSize'
 %hold off
 
 if SaveImgs; saveas(gcf,fullfile(SavDir,'SNR_vs_FWHM.png')); end
-
-
-
 
 
 
