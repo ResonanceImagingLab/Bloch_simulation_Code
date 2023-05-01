@@ -1,0 +1,1 @@
+The functions here are an exploration of running simulations with the XY magnetization with regional XY specific B1 in the xy plane
