@@ -17,19 +17,20 @@ function [outSig1, outSig2, M, time_vect] = BlochSim_MP2RAGESequence(Params, var
 %% Need to define defaults for:
 % Params.InvPulseDur
 % Params.InversionEfficiency
-% Params.flipAngle1, Params.flipAngle2
+% Params.flipAngle, Params.flipAngle
 
-%% If you don't want to look at the impact of the bound pool, set 
-%% Params.M0b = 0, then Params.Ra == Params.Raobs;
-
-
-Params.CalcVector = 0;
+Params.CalcVector = 1;
 
 %% Use name-value pairs to override other variables set. Great for parfor loops!
 for i = 1:2:length(varargin)
     if ischar(varargin{i})
         Params.(varargin{i}) = varargin{i+1};
     end
+end
+
+if length(Params.flipAngle) < 2
+    Params.flipAngle = [Params.flipAngle, Params.flipAngle];
+    disp('Only one flip angle entered, assuming it is used for both readouts');
 end
 
 if ~isfield(Params,'IncludeDipolar')
@@ -40,13 +41,6 @@ if ~isfield(Params,'InversionEfficiency')
     Params.InversionEfficiency = 0.96; 
 end
 
-% if ~isfield(Params,'kf')
-%     Params.kf = (Params.R*Params.M0b); 
-% end
-% 
-% if ~isfield(Params,'kr')
-%     Params.kr = (Params.R*Params.M0a);
-% end
 Params.kf = (Params.R*Params.M0b); 
 Params.kr = (Params.R*Params.M0a);
 
@@ -70,41 +64,41 @@ loops = ceil(6/Params.TR) + num2avgOver;
 
 %% Standard Stuff
 M0 = [0 0 Params.M0a, Params.M0b, 0]';
-I = eye(5); % identity matrix      
-B = [0 0 Params.Ra*Params.M0a, Params.R1b*Params.M0b, 0]';
 
-if Params.echoSpacing == 0
-    Params.echoSpacing = 5e-3; % ensure value not 0
-end    
+if Params.echoSpacing == 0 && Params.numExcitation > 1
+    error( 'Please define Params.echoSpacing');
+end   
 
 
 % if centric, dummy echoes == 2, else ==0. 
 if strcmp(Params.Readout, 'centric')
-    Params.DummyEcho = 2;
-else % assume linear encoding
-    Params.DummyEcho = 0;
+    error('Currently only supporting linear readouts.')
 end
 
+% With the above, we are assuming the signal value is in the middle of the
+% readout:
+readNum = ceil(Params.numExcitation/2);
 
 %% Timing Variables
+% INV ... ET1... EBT... ET2... EBT...TD... REPEAT
+
 % excitation block timing (Turbofactor * echospacing) 
 EBT = (Params.numExcitation+Params.DummyEcho)*( Params.echoSpacing);
 
 % Inversion time needs to be specified by user
-TI1 = Params.TI1; 
-TI2 = Params.TI2; 
+TI1 = Params.TI(1); 
+TI2 = Params.TI(2); 
 
 % evolution time, between 180 inversion and first excitation
 ET1 = TI1 - EBT/2; 
-ET2 = (TI1 + EBT/2) - (TI2 - EBT/2); 
+ET2 = (TI2 - EBT/2) - (TI1 + EBT/2); 
+
+if ET2 < 0 || ET1 < 0
+    error('not enough time to permit acquisition blocks.')
+end
 
 % time delay after last excitation pulse (and echospacing) until next inversion
 TD = Params.TR - (TI2 + EBT/2);
-
-%% Write some error checks
-if ET2 <0
-    error('Inversion times do not have sufficient spacing for the set turbofactor')
-end
 
 if Params.TR ~= (ET1 + EBT + ET2 + EBT+ TD)
     error('sequence timing does not add up to TR value')
@@ -112,7 +106,7 @@ end
 
 
 % Impact of Excitation Pulse of Bound pool
-Params = CalcBoundSatFrom2ExcitationPulse(Params, Params.flipAngle1, Params.flipAngle2);
+Params = CalcBoundSatFrom2ExcitationPulse(Params, Params.flipAngle(1), Params.flipAngle(2));
 Params = CalcBoundSatFromInversionPulse(Params); % Rrfb_exc and Rrfd_exc for inversion pulses
 
 %% Need to determine a sufficient number of isochromats. 
@@ -133,8 +127,8 @@ M(:,1) = M0;
 time_vect = zeros( loops*20,1);
 M_t = repmat(M0,1, Params.N_spin);
 
-Sig_vec1 = zeros(num2avgOver, Params.numExcitation-Params.DummyEcho );
-Sig_vec2 = zeros(num2avgOver, Params.numExcitation-Params.DummyEcho );
+Sig_vec1 = zeros(num2avgOver, 1 );
+Sig_vec2 = zeros(num2avgOver, 1 );
 rep = 1; % to count over the number to average over
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -166,7 +160,7 @@ for i = 1:loops
 
     if Params.CalcVector == 1
         M(:,idx) = mean(M_t,2); 
-        time_vect(idx) = time_vect(idx-1)+TD;
+        time_vect(idx) = time_vect(idx-1) + ET1;
         idx = idx+1;
     end % For viewing; 
 
@@ -187,7 +181,7 @@ for i = 1:loops
     for j = 1: Params.numExcitation
         
         % Calculate rotation matrix for excitation-specific phase
-        R = RotationMatrix_withBoundPool_MP2RAGE(Params.flipAngle1*pi/180, RFphase(j)*pi/180, Params, 1);
+        R = RotationMatrix_withBoundPool_MP2RAGE(Params.flipAngle(1)*pi/180, RFphase(j)*pi/180, Params, 1);
 
         % Instanteous RF pulse
         M_t = pagemtimes(R,M_t); % 50 percent faster than loop
@@ -203,23 +197,14 @@ for i = 1:loops
         end % For viewing;  
 
         %% Store the magnetization of each excitation pulse after 5 seconds prep
-        if i > loops-num2avgOver && (j > Params.DummyEcho) 
+        if i > loops-num2avgOver && (j == readNum) 
 
-            Sig_vec1(rep,j - Params.DummyEcho ) = TransverseMagnetizationMagnitude(M_t);
+            Sig_vec1(rep) = TransverseMagnetizationMagnitude(M_t);
     
-           if (i == loops) && (j == Params.numExcitation) % if simulation is done...             
-               outSig1 = mean(Sig_vec1,1); % output 1xTurbofactor vector
-               
-               if Params.CalcVector == 1
-                   M(:,idx:end) = [];
-                   time_vect(idx:end) = [];
-               end
+           if (i == loops) && (j == readNum) % if simulation is done...             
+               outSig1 = mean(Sig_vec1); 
            end
             
-           % increase repetition index
-           if j == Params.numExcitation
-               rep = rep+1;
-           end
         end % End 'if SS_reached'   
 
         
@@ -240,7 +225,7 @@ for i = 1:loops
 
     if Params.CalcVector == 1
         M(:,idx) = mean(M_t,2); 
-        time_vect(idx) = time_vect(idx-1)+TD;
+        time_vect(idx) = time_vect(idx-1) + ET2;
         idx = idx+1;
     end % For viewing; 
 
@@ -257,7 +242,7 @@ for i = 1:loops
     for j = 1: Params.numExcitation
         
         % Calculate rotation matrix for excitation-specific phase
-        R = RotationMatrix_withBoundPool_MP2RAGE(Params.flipAngle2*pi/180, RFphase(j)*pi/180, Params, 2);
+        R = RotationMatrix_withBoundPool_MP2RAGE(Params.flipAngle(2)*pi/180, RFphase(j)*pi/180, Params, 2);
 
         % Instanteous RF pulse
         M_t = pagemtimes(R,M_t); % 50 percent faster than loop
@@ -273,23 +258,23 @@ for i = 1:loops
         end % For viewing;  
 
         %% Store the magnetization of each excitation pulse after 5 seconds prep
-        if i > loops-num2avgOver && (j > Params.DummyEcho) 
+        if i > loops-num2avgOver && (j == readNum) 
 
-            Sig_vec2(rep,j - Params.DummyEcho ) = TransverseMagnetizationMagnitude(M_t);
+            Sig_vec2( rep ) = TransverseMagnetizationMagnitude(M_t);
     
-           if (i == loops) && (j == Params.numExcitation) % if simulation is done...             
-               outSig2 = mean(Sig_vec2,1); % output 1xTurbofactor vector
+           if (i == loops) && (j == readNum) % if simulation is done...             
+               outSig2 = mean(Sig_vec2); % output 1xTurbofactor vector
                
                if Params.CalcVector == 1
                    M(:,idx:end) = [];
                    time_vect(idx:end) = [];
                end
                
-               return
+               return;
            end
             
            % increase repetition index
-           if j == Params.numExcitation
+           if j == readNum
                rep = rep+1;
            end
         end % End 'if SS_reached'   
@@ -327,8 +312,8 @@ end
 % figure;
 % plot(time_vect, sqrt(sum(M(1:2,:).^2)))
 % % 
-% figure;
-% plot(time_vect, M(3,:))
+figure;
+plot(time_vect, M(3,:))
 % 
 % figure;
 % plot(time_vect, M(4,:))

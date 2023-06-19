@@ -10,6 +10,9 @@ function [outSig, M, time_vect] = BlochSim_MPRAGESequence(Params, varargin)
 %   inversion
 % TR = ET + EBT + TD
 
+% You can simulate an EPI-based inversion recovery experiment by setting
+% the flip angle to 90 degrees, numExcitation = 1, and set the TE.
+
 % if centric, dummy echoes == 2, else ==0. 
 
 %% Note we assume that the Params.numExcitation does not include dummy scans
@@ -23,7 +26,7 @@ function [outSig, M, time_vect] = BlochSim_MPRAGESequence(Params, varargin)
 %% Params.M0b = 0, then Params.Ra == Params.Raobs;
 
 
-% Params.CalcVector = 1;
+Params.CalcVector = 1;
 
 %% Use name-value pairs to override other variables set. Great for parfor loops!
 for i = 1:2:length(varargin)
@@ -64,13 +67,6 @@ loops = ceil(6/Params.TR) + num2avgOver;
 
 %% Standard Stuff
 M0 = [0 0 Params.M0a, Params.M0b, 0]';
-I = eye(5); % identity matrix      
-B = [0 0 Params.Ra*Params.M0a, Params.R1b*Params.M0b, 0]';
-
-if Params.echoSpacing == 0
-    Params.echoSpacing = 5e-3; % ensure value not 0
-end    
-
 
 % % if centric, dummy echoes == 2, else ==0. 
 % if strcmp(Params.Readout, 'centric')
@@ -80,9 +76,19 @@ end
 % end
 Params.numExcitation = Params.numExcitation + Params.DummyEcho;
 
+if Params.echoSpacing == 0 && Params.numExcitation > 1
+    error( 'Please define Params.echoSpacing');
+end    
+
+
 %% Timing Variables
 % excitation block timing (Turbofactor * echospacing) 
-EBT = (Params.numExcitation)*( Params.echoSpacing);
+
+if Params.numExcitation == 1 
+    EBT = 0;
+else 
+    EBT = (Params.numExcitation)*( Params.echoSpacing);
+end
 
 % Inversion time needs to be specified by user
 TI = Params.TI; 
@@ -158,7 +164,7 @@ for i = 1:loops
 
     if Params.CalcVector == 1
         M(:,idx) = mean(M_t,2); 
-        time_vect(idx) = time_vect(idx-1)+TD;
+        time_vect(idx) = time_vect(idx-1) + ET;
         idx = idx+1;
     end % For viewing; 
 
@@ -200,7 +206,7 @@ for i = 1:loops
             Sig_vec(rep,j - Params.DummyEcho ) = TransverseMagnetizationMagnitude(M_t);
     
            if (i == loops) && (j == Params.numExcitation) % if simulation is done...             
-               outSig = mean(Sig_vec,1); % output 1xTurbofactor vector
+               outSig = mean(Sig_vec,1) *exp(-Params.TE/Params.T2a); % output 1xTurbofactor vector
                
                if Params.CalcVector == 1
                    M(:,idx:end) = [];
@@ -219,13 +225,16 @@ for i = 1:loops
         
         %% Apply Gradient Spoiling
         % Note that Params.echoSpace ~= 0.
-        M_t = XYmag_Spoil( Params, M_t, Params.echoSpacing, 0, 1);
-            
-        if Params.CalcVector == 1
-            M(:,idx) = mean(M_t,2); 
-            time_vect(idx) = time_vect(idx-1)+ Params.echoSpacing;
-            idx = idx+1;
-        end % For viewing;      
+
+        if Params.echoSpacing > 0  
+            M_t = XYmag_Spoil( Params, M_t, Params.echoSpacing, 0, 1);
+                
+            if Params.CalcVector == 1
+                M(:,idx) = mean(M_t,2); 
+                time_vect(idx) = time_vect(idx-1)+ Params.echoSpacing;
+                idx = idx+1;
+            end % For viewing;   
+        end  
         
     end % End '1: Params.numExcitation' 
 

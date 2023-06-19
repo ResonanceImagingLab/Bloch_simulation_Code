@@ -31,7 +31,7 @@ if Params.B0 == 3
         Params.Raobs = 1/0.85; 
         Params.R = 35;
         Params.T2a = 35e-3; % Sled and Pike 2001
-        Params.T1D = 1.25e-3; % Varma 2017 was 6ms
+        Params.T1D = 1e-3; % Varma 2017 was 6ms
         Params.lineshape = 'SuperLorentzian'; % or 'SuperLorentzian';
         Params.R1b = 0.25;
         Params.T2b = 11.1e-6;
