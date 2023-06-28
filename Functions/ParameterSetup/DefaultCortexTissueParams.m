@@ -27,16 +27,17 @@ if Params.B0 == 3
         Params.D = 0.8e-3/1e6; % diffusion coefficient-> convert from mm^2/s to m^2/s
 
     elseif strcmp(Params.TissueType, 'WM')
+        % Parameters from: Teixeira et al 2019, note T2b wasn't specified, so taken from Sled and Pike 2001 
         Params.M0a = 1;
         Params.Raobs = 1/0.85; 
-        Params.R = 35;
-        Params.T2a = 35e-3; % Sled and Pike 2001
+        Params.R = 28.3; % k_f / M0b
+        Params.T2a = 81e-3; % 
         Params.T1D = 1e-3; % Varma 2017 was 6ms
         Params.lineshape = 'SuperLorentzian'; % or 'SuperLorentzian';
-        Params.R1b = 0.25;
-        Params.T2b = 11.1e-6;
+        Params.R1b = 1;
+        Params.T2b = 11.8e-6;
         Params.Ra = [];
-        Params.M0b =  0.155;
+        Params.M0b =  0.157;
         Params.D = 1e-3/1e6; % diffusion coefficient-> convert from mm^2/s to m^2/s
 
     else

@@ -25,9 +25,9 @@ end
 ft = fittype( 'a+b*exp(-x/T)', 'independent', 'x', 'dependent', 'y' );
 opts = fitoptions( 'Method', 'NonlinearLeastSquares' );
 opts.Display = 'Off';
-opts.Lower = [-Inf, 0, -Inf];
-opts.StartPoint = [0.9, 1, 0.4];
-opts.Upper = [Inf, 10, Inf];
+opts.Lower = [0, 0, -Inf];
+opts.StartPoint = [1, 1, 1e-4];
+opts.Upper = [10, 10, Inf];
 xData = TI(:);
 
 

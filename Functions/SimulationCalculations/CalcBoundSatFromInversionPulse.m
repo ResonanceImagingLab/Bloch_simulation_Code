@@ -13,14 +13,16 @@ w1 = 2*pi *42.577478518 * b1;  % assume B1 is in microTesla, and drop the 10^6 f
 
 G = computeG(delta, Params.T2b, Params.lineshape);
 
-if strcmp(Params.lineshape, 'SuperLorentzian') % default is gaussian
-    Params.Rrfb_inv = pi.*w1.^2.* G;    
-elseif strcmp(Params.lineshape, 'Lorentzian') % default is gaussian
-    Params.Rrfb_inv = pi.*w1.^2.* G;    
-else
-    Params.Rrfb_inv = w1.^2 .* G;
-end
 
+if ~isfield(Params,'Rrfb_inv')
+    if strcmp(Params.lineshape, 'SuperLorentzian') % default is gaussian
+        Params.Rrfb_inv = pi.*w1.^2.* G;    
+    elseif strcmp(Params.lineshape, 'Lorentzian') % default is gaussian
+        Params.Rrfb_inv = pi.*w1.^2.* G;    
+    else
+        Params.Rrfb_inv = w1.^2 .* G;
+    end
+end
 
 % For dipolar pool == 0 since delta = 0.
 Params.Rrfd_inv = 0; % Params.Rrfb_exc*(2*pi*delta/wloc)^2;

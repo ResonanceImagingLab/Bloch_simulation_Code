@@ -11,14 +11,11 @@ clc;
 
 outputPath = 'E:\GitHub\Bloch_simulation_Code\Investigations\MTeffect_in_T1mapping\savedOutputs\matrices';
 outputPathFig = 'E:\GitHub\Bloch_simulation_Code\Investigations\MTeffect_in_T1mapping\savedOutputs';
-savePrefix ='LorentzT270'; % 'Sled2001', 'LorentzT270',
+savePrefix ='ModulateTP'; % 'Sled2001', 'LorentzT270',
 
 % Notes on savePrefix
-% 'Sled2001' uses the relationship to calculate Ra from Raobs
-% 'FixedT1' uses the assumption that the T1 of all pools is equal
-% 'LorentzT270' changes lineshape to Lorenztian with T2b of 70us as in Van Gelderen et al 2016
-% 'VanGeld2016' Builds on the above with  R1b = 4.0, R1a = 0.41 and
-%   inversion staturation proportion of 87% 
+% ModulateTP -> not realistic for all values to be maintained, so we use
+% linear models to vary them.
 
 %%
 
@@ -34,32 +31,21 @@ Params = CalcImagingParams(Params);
 Params = CalcVariableImagingParams(Params);
 
 Params.PerfectSpoiling = 1;
-
-
-if strcmp(savePrefix, "LorentzT270")
-    % copying Van Gelderen et al 2016
-    Params.lineshape = 'Lorentzian';
-    Params.T2b = 70e-6;
-elseif strcmp(savePrefix, "VanGeld2016")
-    Params.lineshape = 'Lorentzian';
-    Params.T2b = 70e-6;
-    Params.Ra = 0.41;
-    Params.R1b = 4;
-    Params.Rrfb_inv = 665; % hack to get saturation level to 0.13 remaining
-end
+Params.R1b = 1; % The assumed value for Sled and Pike
+Params.R = []; % clear it to avoid errors
 
 %% To test the MT effect, we will simulate for a range of bound pool parameters
+% Compared to the main script, here we will vary the values based on Sled
+% and Pike 2001. 
 
-M0b = 0:0.03:0.24;
+
 T1 = linspace(600, 2500, 50);
-
-[M0b_m, T1_m] = meshgrid(M0b, T1);
-
 % Then vectorize for easy looping:
-M0b_m = M0b_m(:); T1_m = T1_m(:)./1000;
+T1_m = T1(:)./1000;
 
 % We actually input Ra_obs in, so invert:
 Raobs_m = 1./T1_m;
+[M0b, kf, Ra, T2a, T2b, kr] = LinearModelVals_SledandPike2001( Raobs_m );
 
 simNum = length(Raobs_m);
 
@@ -79,14 +65,11 @@ Params.flipAngle = 6;
 tic % About 18 seconds for 450 options
 
 for i = 1 : simNum
-    if strcmp(savePrefix, 'Sled2001') || strcmp(savePrefix, 'LorentzT270')...
-            || strcmp(savePrefix, 'VanGeld2016')
-        [vfa_sig(i,1), ~, ~] = BlochSimFlashSequence_v2( Params,...
-            'Raobs', Raobs_m(i), 'M0b', M0b_m(i) );
-    elseif strcmp( savePrefix, 'FixedT1')
-        [vfa_sig(i,1), ~, ~] = BlochSimFlashSequence_v2( Params,...
-            'Raobs', Raobs_m(i), 'M0b', M0b_m(i),'Ra', Raobs_m(i));
-    end
+
+    [vfa_sig(i,1), ~, ~] = BlochSimFlashSequence_v2( Params,...
+        'Raobs', Raobs_m(i), 'M0b', M0b(i),'Ra', Ra(i), ...
+        'T2a', T2a(i), 'T2b', T2b(i),'kf', kf(i), 'kr', kr(i));
+
 end
 
 % Image 2 - T1w
@@ -94,14 +77,11 @@ Params.TR = 15/1000;
 Params.flipAngle = 20;
 
 for i = 1: simNum
-    if strcmp(savePrefix, 'Sled2001') || strcmp(savePrefix, 'LorentzT270')...
-            || strcmp(savePrefix, 'VanGeld2016')
+
         [vfa_sig(i,2), ~, ~] = BlochSimFlashSequence_v2( Params,...
-            'Raobs', Raobs_m(i), 'M0b', M0b_m(i) );
-    elseif strcmp( savePrefix, 'FixedT1')
-        [vfa_sig(i,2), ~, ~] = BlochSimFlashSequence_v2( Params,...
-            'Raobs', Raobs_m(i), 'M0b', M0b_m(i),'Ra', Raobs_m(i));
-    end
+            'Raobs', Raobs_m(i), 'M0b', M0b(i),'Ra', Ra(i), ...
+        'T2a', T2a(i), 'T2b', T2b(i),'kf', kf(i), 'kr', kr(i) );
+
 end
 toc
 
@@ -135,15 +115,11 @@ tic % Roughly 1 min for sim and fitting
 for i = 1: simNum
     for j = 1:numTI
         
-        if strcmp(savePrefix, 'Sled2001') || strcmp(savePrefix, 'LorentzT270')...
-            || strcmp(savePrefix, 'VanGeld2016')
-            [IR_sig(i,j), ~, ~] = BlochSim_MPRAGESequence( Params,...
-                'Raobs', Raobs_m(i), 'M0b', M0b_m(i), 'TI', TI(j) );
-        elseif strcmp( savePrefix, 'FixedT1')
-            [IR_sig(i,j), ~, ~] = BlochSim_MPRAGESequence( Params,...
-                'Raobs', Raobs_m(i), 'M0b', M0b_m(i), 'TI', TI(j),...
-                'Ra', Raobs_m(i) );
-        end
+        [IR_sig(i,j), ~, ~] = BlochSim_MPRAGESequence( Params,...
+            'Raobs', Raobs_m(i), 'M0b', M0b(i), 'TI', TI(j),...
+            'Ra', Ra(i), 'T2a', T2a(i), 'T2b', T2b(i),'kf', kf(i), ...
+            'kr', kr(i) );
+
     end
 end
 toc
@@ -179,14 +155,10 @@ MP2_sig = zeros( simNum, 2);
 tic % roughly 3 mins
 for i = 1: simNum
 
-    if strcmp(savePrefix, 'Sled2001') || strcmp(savePrefix, 'LorentzT270')...
-            || strcmp(savePrefix, 'VanGeld2016')
-        [MP2_sig(i,1),MP2_sig(i,2), ~, ~] = BlochSim_MP2RAGESequence( Params,...
-            'Raobs', Raobs_m(i), 'M0b', M0b_m(i) );
-    elseif strcmp( savePrefix, 'FixedT1')
-        [MP2_sig(i,1),MP2_sig(i,2), ~, ~] = BlochSim_MP2RAGESequence( Params,...
-            'Raobs', Raobs_m(i), 'M0b', M0b_m(i),'Ra', Raobs_m(i));
-    end
+
+    [MP2_sig(i,1),MP2_sig(i,2), ~, ~] = BlochSim_MP2RAGESequence( Params,...
+        'Raobs', Raobs_m(i), 'M0b', M0b(i),'Ra', Ra(i), ...
+        'T2a', T2a(i), 'T2b', T2b(i),'kf', kf(i), 'kr', kr(i) );
 
 end
 toc
@@ -225,23 +197,23 @@ ticV = lLim:400:hLim;
 % x data = T1:
 x = T1(:);
 refy = x;
-[cm_data]=inferno(12); % First one is black so lets avoid the darker shades so the reference line can be black. 
+[cm_data]=inferno(5); % First one is black so lets avoid the darker shades so the reference line can be black. 
 
 
-%% VFA
-% y data = matrix with length(T1) rows, length(M0b) columns
-y = reshape(vfa_T1, [length(T1), length(M0b)]);
+%% VFA, IR and MP2RAGE
+
+y = [vfa_T1, IR_T1, mp2rage_T1];
 
 figure; 
 hold on;
-for i = 1:length(M0b)
-    plot(x,y(:,i),'Color', cm_data(end-length(M0b)+i-1,: ),'LineWidth',2)
+for i = 1:3
+    plot(x,y(:,i),'Color', cm_data(i+1,: ),'LineWidth',2)
 end
 xlabel( 'Input T_{1,obs} (ms)', 'FontSize', FontSize, 'FontWeight', 'bold' )
 ylabel( 'Simulated T_{1,obs} (ms)' , 'FontSize', FontSize, 'FontWeight', 'bold');
 xlim([lLim, hLim]); ylim([lLim, hLim])
 xticks(ticV); yticks(ticV)
-title('VFA', 'FontSize', FontSize, 'FontWeight', 'bold')
+%title('VFA', 'FontSize', FontSize, 'FontWeight', 'bold')
 ax = gca;  ax.FontSize = FontSize; 
 hold on
 plot(x,refy,'--','Color',[0,0,0],'LineWidth',1.5)
@@ -258,9 +230,28 @@ axLims = [lLim hLim lLim hLim];  %[x-min, x-max, y-min, y-max] axis limits
 plot([point(1), point(1)], [axLims(3), point(2)], 'k-')  %vertical line
 plot([axLims(1), point(1)], [point(2), point(2)], 'k-')  %horizontal line
 text(lLim + 20, point(1) + 70, strcat(num2str(point(1)), " ms"),'FontSize', FontSize-2)
+
+legend('VFA','IR','MP2RAGE', 'FontSize', FontSize, 'location', 'best')
 hold off
 
-saveas(gcf,fullfile(outputPathFig,[savePrefix,'_T1plot_vfa.png']));
+saveas(gcf,fullfile(outputPathFig,[savePrefix,'_T1plot_comparison.png']));
+
+temp = mean(y(:,3)-y(:,1)); %Average difference was 70 ms between the two. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 %% IR
@@ -270,7 +261,7 @@ y = reshape(IR_T1, [length(T1), length(M0b)]);
 figure; 
 hold on;
 for i = 1:length(M0b)
-    plot(x,y(:,i),'Color', cm_data(end-length(M0b)+i-1,: ),'LineWidth',2)
+    plot(x,y(:,i),'Color', cm_data(end-length(M0b)+i-1,: ))
 end
 xlabel( 'Input T_{1,obs} (ms)', 'FontSize', FontSize, 'FontWeight', 'bold' )
 ylabel( 'Simulated T_{1,obs} (ms)' , 'FontSize', FontSize, 'FontWeight', 'bold');
@@ -279,21 +270,7 @@ xticks(ticV); yticks(ticV)
 title('IR', 'FontSize', FontSize, 'FontWeight', 'bold')
 ax = gca;  ax.FontSize = FontSize; 
 hold on
-plot(x,refy,'--','Color',[0,0,0],'LineWidth',1.5)
-
-% Add lines for typical GM and WM T1s
-point = [850, 850];
-axLims = [lLim hLim lLim hLim];  %[x-min, x-max, y-min, y-max] axis limits
-plot([point(1), point(1)], [axLims(3), point(2)], 'k-')  %vertical line
-plot([axLims(1), point(1)], [point(2), point(2)], 'k-')  %horizontal line
-text(lLim + 20, point(1) + 70, strcat(num2str(point(1)), " ms"),'FontSize', FontSize-2)
-
-point = [1400, 1400];
-axLims = [lLim hLim lLim hLim];  %[x-min, x-max, y-min, y-max] axis limits
-plot([point(1), point(1)], [axLims(3), point(2)], 'k-')  %vertical line
-plot([axLims(1), point(1)], [point(2), point(2)], 'k-')  %horizontal line
-text(lLim + 20, point(1) + 70, strcat(num2str(point(1)), " ms"),'FontSize', FontSize-2)
-
+plot(x,refy,':','Color',[0,0,0],'LineWidth',2)
 hold off
 
 saveas(gcf,fullfile(outputPathFig,[savePrefix,'_T1plot_IR.png']));
@@ -305,7 +282,7 @@ y = reshape(mp2rage_T1, [length(T1), length(M0b)]);
 figure; 
 hold on;
 for i = 1:length(M0b)
-    plot(x,y(:,i),'Color', cm_data(end-length(M0b)+i-1,: ),'LineWidth',2)
+    plot(x,y(:,i),'Color', cm_data(end-length(M0b)+i-1,: ))
 end
 xlabel( 'Input T_{1,obs} (ms)', 'FontSize', FontSize, 'FontWeight', 'bold' )
 ylabel( 'Simulated T_{1,obs} (ms)' , 'FontSize', FontSize, 'FontWeight', 'bold');
@@ -314,21 +291,7 @@ xticks(ticV); yticks(ticV)
 title('MP2RAGE', 'FontSize', FontSize, 'FontWeight', 'bold')
 ax = gca;  ax.FontSize = FontSize; 
 hold on
-plot(x,refy,'--','Color',[0,0,0],'LineWidth',1.5)
-
-% Add lines for typical GM and WM T1s
-point = [850, 850];
-axLims = [lLim hLim lLim hLim];  %[x-min, x-max, y-min, y-max] axis limits
-plot([point(1), point(1)], [axLims(3), point(2)], 'k-')  %vertical line
-plot([axLims(1), point(1)], [point(2), point(2)], 'k-')  %horizontal line
-text(lLim + 20, point(1) + 70, strcat(num2str(point(1)), " ms"),'FontSize', FontSize-2)
-
-point = [1400, 1400];
-axLims = [lLim hLim lLim hLim];  %[x-min, x-max, y-min, y-max] axis limits
-plot([point(1), point(1)], [axLims(3), point(2)], 'k-')  %vertical line
-plot([axLims(1), point(1)], [point(2), point(2)], 'k-')  %horizontal line
-text(lLim + 20, point(1) + 70, strcat(num2str(point(1)), " ms"),'FontSize', FontSize-2)
-
+plot(x,refy,':','Color',[0,0,0],'LineWidth',2)
 hold off
 
 saveas(gcf,fullfile(outputPathFig,[savePrefix,'_T1plot_mp2rage.png']));
@@ -348,7 +311,7 @@ y = (y2-y1)./y2 *100; % percent difference
 figure; 
 hold on;
 for i = 1:length(M0b)
-    plot(x,y(:,i),'Color', cm_data(end-length(M0b)+i-1,: ),'LineWidth',2)
+    plot(x,y(:,i),'Color', cm_data(end-length(M0b)+i-1,: ))
 end
 xlabel( 'Input T_{1,obs} (ms)', 'FontSize', FontSize, 'FontWeight', 'bold' )
 ylabel( 'Sim. T_{1,obs} Diff (%)' , 'FontSize', FontSize, 'FontWeight', 'bold');
@@ -357,15 +320,7 @@ xticks(ticV)
 title('IR - VFA', 'FontSize', FontSize, 'FontWeight', 'bold')
 ax = gca;  ax.FontSize = FontSize; 
 hold on
-plot(x,refy,'--','Color',[0,0,0],'LineWidth',1.5)
-
-% Add lines for typical GM and WM T1s
-xline(850)
-text(850 + 20, hLim2 - 5, strcat(num2str(850), " ms"),'FontSize', FontSize-2)
-
-xline(1400)
-text(1400 + 20, hLim2 - 5, strcat(num2str(point(1)), " ms"),'FontSize', FontSize-2)
-
+plot(x,refy,':','Color',[0,0,0],'LineWidth',1)
 hold off
 
 saveas(gcf,fullfile(outputPathFig,[savePrefix,'_T1plot_diff_IR_vs_vfa.png']));
@@ -381,7 +336,7 @@ y = (y2-y1)./y2 *100; % percent difference
 figure; 
 hold on;
 for i = 1:length(M0b)
-    plot(x,y(:,i),'Color', cm_data(end-length(M0b)+i-1,: ),'LineWidth',2)
+    plot(x,y(:,i),'Color', cm_data(end-length(M0b)+i-1,: ))
 end
 xlabel( 'Input T_{1,obs} (ms)', 'FontSize', FontSize, 'FontWeight', 'bold' )
 ylabel( 'Sim. T_{1,obs} Diff (%)' , 'FontSize', FontSize, 'FontWeight', 'bold');
@@ -390,15 +345,7 @@ xticks(ticV);
 title('IR - MP2RAGE', 'FontSize', FontSize, 'FontWeight', 'bold')
 ax = gca;  ax.FontSize = FontSize; 
 hold on
-plot(x,refy,'--','Color',[0,0,0],'LineWidth',1.5)
-
-% Add lines for typical GM and WM T1s
-xline(850)
-text(850 + 20, hLim2 - 5, strcat(num2str(850), " ms"),'FontSize', FontSize-2)
-
-xline(1400)
-text(1400 + 20, hLim2 - 5, strcat(num2str(point(1)), " ms"),'FontSize', FontSize-2)
-
+plot(x,refy,':','Color',[0,0,0],'LineWidth',1)
 hold off
 
 saveas(gcf,fullfile(outputPathFig,[savePrefix,'_T1plot_diff_IR_vs_mp2rage.png']));

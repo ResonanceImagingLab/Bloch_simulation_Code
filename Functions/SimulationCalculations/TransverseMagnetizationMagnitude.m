@@ -4,4 +4,9 @@ function PerpMag = TransverseMagnetizationMagnitude(M)
 avgx = mean(M(1,:));
 avgy = mean(M(2,:));
 PerpMag = sqrt(avgx^2 +avgy^2);
+
+% Added for Magnetization prepared sequences.
+if mean(M(3,:)) < 0
+    PerpMag = PerpMag * -1;
+end
     
