@@ -21,7 +21,7 @@ surf(slice_b1, slice_M0b, slice_MT,'FaceAlpha',0.5)
 hold on
 surf(slice_b1, slice_M0b, slice_z,'FaceAlpha',0.5)
 ax = gca; ax.FontSize = 16; 
-xlabel('B_1 (\muT)', 'FontSize', 16, 'FontWeight', 'bold')
+xlabel('Sat. Flip Angle (deg)', 'FontSize', 16, 'FontWeight', 'bold')
 ylabel('M_{0b}', 'FontSize', 16, 'FontWeight', 'bold')
 zlabel('MT_{sat}', 'FontSize', 16, 'FontWeight', 'bold')
 %title('8k Dual')
