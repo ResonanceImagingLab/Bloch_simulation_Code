@@ -1,8 +1,18 @@
 %% Generate the M0B mapping to R1 from simulation results and acquired data
 
+%% Download the following: 
+% https://github.com/josephdviviano/unring
+% https://github.com/christopherrowley/NeuroImagingMatlab
+% https://github.com/TardifLab/OptimizeIHMTimaging % Instead of
+% Bloch_simulation_Code****
+% https://github.com/ulrikls/niak ** this requires minc tools to be
+% installed for it to work.
+
 addpath( genpath( '/media/chris/DataHDD/user/code/matlab/niak-master' ));
 addpath( genpath( '/media/chris/SSD/GitHub/NeuroImagingMatlab'));
 addpath( genpath( '/media/chris/SSD/GitHub/Bloch_simulation_Code'))
+
+
 
 
 %% Load images:
@@ -23,16 +33,14 @@ mfn = {'/mni_gre_MTw_helms2k_0_3mm_sFOV_s007.nii' '/mni_gre_MTw_helms2k_0_3mm_sF
 % num contrasts 4
 nc = 4;
 
-
-
 % With this data, I also had an issue with T1 matrix size:
-tmp = zeros(128,2,224,4);
+tmp = zeros(128,2,224,nc);
 
-st = 1; ed = st+3;
+st = 1; ed = st+ nc-1;
 for i = 1:length(mfn)
     
     fn = fullfile( DATADIR, mfn{ i });
-    [hdr, img] = niak_read_vol( fn );
+    [~, img] = niak_read_vol( fn );
     
     % fix issue with T1w matrix size
     [~,y,~,~] = size(img); 
@@ -65,8 +73,10 @@ figure; imshow3Dfull( merge_mtw , [0 550], gray)
 figure; imshow3Dfull( merge_pdw , [0 550], gray)
 figure; imshow3Dfull( merge_t1w , [0 550], gray)
 
+% Optional, sometimes this algorithm crashes matlab
+%
 % tic
-% merge_t1w= unring3D(merge_t1w,3);
+%merge_t1w= unring3D(merge_t1w,3);
 % merge_mtw= unring3D(merge_mtw,3);
 % merge_pdw = unring3D(merge_pdw,3);
 % toc
@@ -110,11 +120,8 @@ App = App .* mask;
 T1 = limitHandler(T1.*mask, 0,6000);
 App = limitHandler( App.*mask, 0, 20000);
 
-
-
 figure; imshow3Dfull(T1 , [600 2500], jet);
 figure; imshow3Dfull(App , [0 15000], gray);
-
 
 mkdir(fullfile(OutputDir,'processing'))
 hdr.file_name = fullfile(OutputDir,'processing/T1.mnc.gz'); niak_write_vol(hdr,T1);
@@ -137,7 +144,6 @@ hdr.file_name = fullfile(OutputDir,'processing/MTsat_noB1.mnc.gz'); niak_write_v
 
 %% With MTsat maps made, perform M0b mapping
 
-
 % load in the fit results for VFA - Optimal
 fitValues = load(fullfile(OutputDir,'fitValues_Marm.mat'));
 fitValues = fitValues.fitValues;
@@ -146,71 +152,9 @@ fitValues = fitValues.fitValues;
 R1_s = double(abs( R1*1000));
 App = double(App);
 
-figure; imshow3Dfull( R1_s , [0 2], jet);
 
-% initialize matrices
-M0b = zeros(size(merge_mtw));
-
-
-%% SPEED IT UP BY DOING A FEW AXIAL SLICES
-axialStart = 110; % 65
-axialStop = axialStart+35;%115;
-% check
-figure; imshow3Dfull(MTsat(:,:,axialStart:axialStop) , [0 0.06], jet)
-
-satFlipAngle = 639.6; % in degrees
-
-tic %  
-for i = 1:size(MTsat,1) % went to 149
-    
-    for j = 1:size(MTsat,2)% 
-        for k =  axialStart:axialStop 
-            
-            if (mask(i,j,k) > 0) && ( M0b(i,j,k) ==0 )
-                                 
-                 [M0b(i,j,k), ~,  ~]  = CR_fit_M0b_v2( satFlipAngle*b1(i,j,k), R1_s(i,j,k), MTsat(i,j,k), fitValues);
-                 
-            end
-        end
-    end
-    disp(i)
-end
-toc %% this took 30hours for 1mm isotropic full brain dataset. * was running fitting in another matlab
-    % instance, so could be easily sped up running on its own and/or adding
-    % the parfor loop. 
-
-figure; imshow3Dfull(M0b, [0 0.15],jet)
-
-
-% export
-
-hdr.file_name = fullfile(OutputDir,'processing/M0b.mnc.gz'); niak_write_vol(hdr,M0b);
-
-
-%% With M0B maps made, correlate with R1 and update the fitValues file. 
-% I need a manual mask to get rid of the eyes and other non-brain material.
-[~, maskitk] = niak_read_vol( fullfile(OutputDir,'processing/M0bMask.nii.gz') ); 
-
-figure; imshow3Dfullseg(M0b, [0 0.15],maskitk) % wow it loads the right way!
-
-tempMask = maskitk;
-tempMask( T1 < 700) = 0;
-tempMask(T1 >2200) = 0;
-
-% erode to get rid of dura and other non-brain tissue. 
-
-tempMask = imerode(tempMask, strel('sphere',2));
-figure; imshow3Dfullseg(M0b, [0 0.15],tempMask)
-
-
-
-% Optimized Approach, fit degree 2
-fitValues  = CR_generate_R1vsM0B_correlation( R1_s, M0b, tempMask, ...
-    fitValues, fullfile(OutputDir,'processing/R1vsM0b_Marm.png'), ...
-    fullfile(OutputDir,'fitValues.mat'), 2);
-
-R1_p = R1_s(tempMask>0);
-M0b_p = M0b(tempMask>0);
+% If it is in the right units, then the scaling of 0 to 2 should work!
+figure; imshow3Dfull( R1_s , [0 2], jet); 
 
 
 %% Now use these results to B1 correct the data:
