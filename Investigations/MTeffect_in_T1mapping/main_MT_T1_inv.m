@@ -11,7 +11,7 @@ clc;
 
 outputPath = 'E:\GitHub\Bloch_simulation_Code\Investigations\MTeffect_in_T1mapping\savedOutputs\matrices';
 outputPathFig = 'E:\GitHub\Bloch_simulation_Code\Investigations\MTeffect_in_T1mapping\savedOutputs';
-savePrefix ='LorentzT270'; % 'Sled2001', 'LorentzT270',
+savePrefix ='FixedT1'; % 'Sled2001', 'LorentzT270',
 
 % Notes on savePrefix
 % 'Sled2001' uses the relationship to calculate Ra from Raobs

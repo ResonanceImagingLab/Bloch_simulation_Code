@@ -74,7 +74,7 @@ figure; imshow3Dfull( merge_pdw , [0 550], gray)
 figure; imshow3Dfull( merge_t1w , [0 550], gray)
 
 % Optional, sometimes this algorithm crashes matlab
-%
+% SAVE PROGRESS BEFORE RUNNING
 % tic
 %merge_t1w= unring3D(merge_t1w,3);
 % merge_mtw= unring3D(merge_mtw,3);
@@ -105,6 +105,7 @@ figure; imshow3Dfull(b1, [0.6 1.2],jet)
 %% Compute MTsat 
 % used am empirical factor to fix T1 map for b1 inconsistency.
 
+% FLip angles
 a1 = 5*pi/180 .* b1.^(2.7/2);
 a2 = 20*pi/180 .* b1.^(2.7/2); 
 TR_mt = 30; %ms ->
@@ -131,8 +132,8 @@ hdr.file_name = fullfile(OutputDir,'processing/App.mnc.gz'); niak_write_vol(hdr,
 % enter all time units in milliseconds
 echoSpacing = 0.1; % The echo spacing of the GRE readout
 numExcitation = 1; 
-TR = 30;
-flipA = 5; % flip angle
+TR = 30; % milliseconds
+flipA = 5; % flip angle degrees
 DummyEcho = 0;
 
 MTsat = calcMTsatThruLookupTablewithDummyV3( merge_mtw, b1, T1, mask, App,...
@@ -166,7 +167,7 @@ corr_factor = MTsat_B1corr_factor_map( b1, R1_s, satFlipAngle, fitValues);
 
 % Part 2, apply correction map
 MTsat_c = (MTsat + MTsat.* corr_factor) .* mask;
-MTsat_c = limitHandler(MTsat_c,0, 0.1);
+MTsat_c = limitHandler(MTsat_c,0, 0.1); % 0.025
 
 
 
@@ -175,8 +176,8 @@ figure; imshow3Dfull(MTsat_c , [0 0.02], jet);
 
 
 %% Other things, save if you want
-hdr.file_name = fullfile(OutputDir,'processing//MTsat_marm.mnc.gz'); niak_write_vol(hdr, MTsat_c);
-hdr.file_name = fullfile(OutputDir,'processing//b1_highres.mnc.gz'); niak_write_vol(hdr, b1);
+hdr.file_name = fullfile(OutputDir,'processing/MTsat_marm.mnc.gz'); niak_write_vol(hdr, MTsat_c);
+hdr.file_name = fullfile(OutputDir,'processing/b1_highres.mnc.gz'); niak_write_vol(hdr, b1);
 
 
 

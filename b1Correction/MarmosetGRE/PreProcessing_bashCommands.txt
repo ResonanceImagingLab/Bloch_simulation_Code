@@ -1,0 +1,46 @@
+##########  B1 and B0 map processing  ##########
+# Need minctools and fsl commands for this! 
+# Note, minctools comes with freesurfer, so if you have problems with the commands, check to make sure
+# That you don't have two minc tools in your path (1 solution is to zip the minc folder in freesurfer, you keep the files but its locked)
+
+
+
+#1 Get a B0 map from the data from the scanner. Use the following command. 
+
+# looks like something happened to the minc versions, so just work with the nifti. 
+
+nii2mnc fieldmap_gre_field_mapping.nii.gz b0_anat1.mnc.gz
+
+# Makes a mask
+minccalc -copy_header -clobber -expr "A[0]<100 ? 0 : A[0]" b0_anat1.mnc.gz b0_anat1masked.mnc  ##mask the b0 anatomical by threshold
+
+# Apply mask
+fslmaths fieldmap_gre_field_mapping.nii.gz -thr 100 b0_anat1masked.nii
+
+# crop 4D to 3D
+fslroi b0_anat1masked.nii.gz b0_anat1maskedcrp.nii 0 64 0 64 0 35 0 1
+
+
+fsl_prepare_fieldmap SIEMENS fieldmap_gre_field_mapping_phase.nii.gz b0_anat1masked.nii.gz B0map_radians 2.46
+
+# convert back to minc to use minc tools
+
+nii2mnc B0map_radians.nii.gz B0map_radians.mnc
+minccalc -expr "A[0]/(2*3.1415926)" -copy_header -clobber B0map_radians.mnc B0map_Hz.mnc
+
+nii2mnc tfl_b1map_1p2_by_2p4_transverse_s015.nii.gz b1_phase_transverse.mnc
+nii2mnc tfl_b1map_1p2_by_2p4_sagital_s013.nii.gz b1_phase_saggital.mnc
+nii2mnc tfl_b1map_1p2_by_2p4_coronal_s011.nii.gz b1_phase_coronal.mnc
+
+
+#####################################
+#### 2. Run b1b0map_resample.pl to upsample the B0 and B1map to the gre images. This step also normalized the B1 map to the flip angle 
+# Convert to mnc2nii
+
+/data_/tardiflab/chris/development/scripts/b1b0map_resample.pl b1_phase_coronal.mnc B0map_Hz.mnc templateRes.mnc resampled_c
+
+/data_/tardiflab/chris/development/scripts/b1b0map_resample.pl b1_phase_saggital.mnc B0map_Hz.mnc templateRes.mnc resampled_s
+
+/data_/tardiflab/chris/development/scripts/b1b0map_resample.pl b1_phase_transverse.mnc B0map_Hz.mnc templateRes.mnc resampled_t
+
+

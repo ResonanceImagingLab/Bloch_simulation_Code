@@ -92,7 +92,7 @@ b1 = limitHandler(b1, 0.5,1.5);
 figure; imshow3Dfull(b1, [0.6 1.2],jet)
 
 
-%% Compute MTsat 
+%% Compute MTsat Helm 2008 paper
 % used am empirical factor to fix T1 map for b1 inconsistency.
 
 a1 = 5*pi/180 .* b1.^(2.7/2);
