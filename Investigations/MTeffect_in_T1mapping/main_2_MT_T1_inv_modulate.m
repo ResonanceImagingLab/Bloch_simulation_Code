@@ -190,8 +190,8 @@ save( fullfile(outputPath,[savePrefix,'_mp2rage_T1.mat']),"mp2rage_T1");
 
 %% Set up values:
 FontSize = 20;
-lLim = 600;
-hLim = 1800;
+lLim = 700;
+hLim = 1600;
 ticV = lLim:400:hLim;
 
 % x data = T1:
@@ -231,26 +231,76 @@ plot([point(1), point(1)], [axLims(3), point(2)], 'k-')  %vertical line
 plot([axLims(1), point(1)], [point(2), point(2)], 'k-')  %horizontal line
 text(lLim + 20, point(1) + 70, strcat(num2str(point(1)), " ms"),'FontSize', FontSize-2)
 
-legend('VFA','IR','MP2RAGE', 'FontSize', FontSize, 'location', 'best')
+legend('VFA','IR','MP2RAGE', 'FontSize', FontSize-3, 'location', 'best')
 hold off
 
-saveas(gcf,fullfile(outputPathFig,[savePrefix,'_T1plot_comparison.png']));
+% saveas(gcf,fullfile(outputPathFig,[savePrefix,'_T1plot_comparison.png']));
 
 temp = mean(y(:,3)-y(:,1)); %Average difference was 70 ms between the two. 
 
 
+%% Hard to see, so add zooms. WM line
+
+FontSize = 20;
+lLim = 750;
+hLim = 950;
+ticV = lLim:100:hLim;
+
+figure; 
+hold on;
+for i = 1:3
+    plot(x,y(:,i),'Color', cm_data(i+1,: ),'LineWidth',4)
+end
+%xlabel( 'Input T_{1,obs} (ms)', 'FontSize', FontSize, 'FontWeight', 'bold' )
+%ylabel( 'Simulated T_{1,obs} (ms)' , 'FontSize', FontSize, 'FontWeight', 'bold');
+xlim([lLim, hLim]); ylim([lLim, hLim])
+xticks(ticV); yticks(ticV)
+%title('VFA', 'FontSize', FontSize, 'FontWeight', 'bold')
+ax = gca;  ax.FontSize = FontSize; 
+hold on
+plot(x,refy,'--','Color',[0,0,0],'LineWidth',1.5)
+
+% Add lines for typical GM and WM T1s
+point = [850, 850];
+axLims = [lLim hLim lLim hLim];  %[x-min, x-max, y-min, y-max] axis limits
+plot([point(1), point(1)], [axLims(3), point(2)], 'k-')  %vertical line
+plot([axLims(1), point(1)], [point(2), point(2)], 'k-')  %horizontal line
+%text(lLim + 20, point(1) + 10, strcat(num2str(point(1)), " ms"),'FontSize', FontSize-2)
+hold off
+saveas(gcf,fullfile(outputPathFig,[savePrefix,'_T1plot_comparison_WMzoom.png']));
 
 
 
+%% Hard to see, so add zooms. GM line
+FontSize = 20;
+lLim = 1300;
+hLim = 1500;
+ticV = lLim:100:hLim;
 
 
+figure; 
+hold on;
+for i = 1:3
+    plot(x,y(:,i),'Color', cm_data(i+1,: ),'LineWidth',4)
+end
+%xlabel( 'Input T_{1,obs} (ms)', 'FontSize', FontSize, 'FontWeight', 'bold' )
+%ylabel( 'Simulated T_{1,obs} (ms)' , 'FontSize', FontSize, 'FontWeight', 'bold');
+xlim([lLim, hLim]); ylim([lLim, hLim])
+xticks(ticV); yticks(ticV)
+%title('VFA', 'FontSize', FontSize, 'FontWeight', 'bold')
+ax = gca;  ax.FontSize = FontSize; 
+hold on
+plot(x,refy,'--','Color',[0,0,0],'LineWidth',1.5)
 
+% Add lines for typical GM and WM T1s
+point = [1400, 1400];
+axLims = [lLim hLim lLim hLim];  %[x-min, x-max, y-min, y-max] axis limits
+plot([point(1), point(1)], [axLims(3), point(2)], 'k-')  %vertical line
+plot([axLims(1), point(1)], [point(2), point(2)], 'k-')  %horizontal line
+%text(hLim - 95, lLim + 50, strcat(num2str(point(1)), " ms"),'FontSize', FontSize-2)
 
-
-
-
-
-
+hold off
+saveas(gcf,fullfile(outputPathFig,[savePrefix,'_T1plot_comparison_GMzoom.png']));
 
 
 
