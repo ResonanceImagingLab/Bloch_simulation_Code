@@ -1,4 +1,4 @@
-function B1rms = getExcPulseB1rms( flipAngle)
+function B1rms = getExcPulseB1rms( flipAngle, pulseDur)
 
 % I have only computed for one pulse shape, other can be done by going
 % through the code commented out at the bottom.
@@ -27,3 +27,8 @@ B1rms = sqrt(P3);
 
 
 %figure; ViewPulse(excPulse, 'omega')
+
+
+% Confirm with:
+ % tp = α/(360•γ•B1) 
+% B1 = flipAngle / (360 * gam * pulseDur);

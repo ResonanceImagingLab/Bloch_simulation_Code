@@ -1,4 +1,4 @@
-function B1rms = getPulseB1rms(satFlipAngle, pulseDur, SatPulseShape)
+function B1rms = getPulseB1rms( flipAngle, pulseDur, SatPulseShape)
 
 % This has been updated to take in the satFlipAngle, and then compute the
 % B1rms using qMRlab pulse functions. To do so requires:
@@ -20,15 +20,11 @@ delta = 5000; % not important for this.
 gam = 42.576;
 
 tSat = 0:pulseDur/200:pulseDur;
-satPulse = GetPulse(satFlipAngle, delta, pulseDur, SatPulseShape, PulseOpt);
+satPulse = GetPulse(FlipAngle, delta, pulseDur, SatPulseShape, PulseOpt);
 
 
 B1_time = satPulse.omega(tSat)/(2*pi*gam);
 P3 = (1/pulseDur) * trapz(tSat,B1_time.^2);
 B1rms = sqrt(P3);
-
-
-
-
 
 

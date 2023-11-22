@@ -1,1 +1,0 @@
-## These are additional functions to be used with qMRlabs code
