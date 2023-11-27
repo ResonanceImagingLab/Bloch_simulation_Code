@@ -10,7 +10,7 @@ else
     error('specify invNumber as 1 or 2')
 end
 
-Erfd = exp(-Params.Rrfd_exc*Params.InvPulseDur); % doing to be exp(0)
+Erfd = 0; %exp(-Params.Rrfd_exc*Params.InvPulseDur); % doing to be exp(0)
 
 R = [cos(fa)+(1-cos(fa))*cos(ph)^2, (1-cos(fa))*sin(ph)*cos(ph),    -sin(fa)*sin(ph), 0, 0;...
     (1-cos(fa))*sin(ph)*cos(ph),    cos(fa)+(1-cos(fa))*sin(ph)^2 ,  sin(fa)*cos(ph), 0, 0;...

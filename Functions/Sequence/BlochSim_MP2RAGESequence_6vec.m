@@ -1,5 +1,6 @@
-function [outSig1, outSig2, M, time_vect] = BlochSim_MP2RAGESequence(Params, varargin)
+function [outSig1, outSig2, M, time_vect] = BlochSim_MP2RAGESequence_6vec(Params, varargin)
 
+% This version removes dipolar, and add XY for bound pool 
 %% Overview of how the code works with applicable function calls:
 
 % Sequence timing:
@@ -33,24 +34,11 @@ if length(Params.flipAngle) < 2
     disp('Only one flip angle entered, assuming it is used for both readouts');
 end
 
-if ~isfield(Params,'IncludeDipolar')
-    Params.IncludeDipolar = 1; 
-end
-
-if ~isfield(Params,'InversionEfficiency')
-    % Only used if simAdiabatic is not used
-    Params.InversionEfficiency = 0.96; 
-end
-
 if ~isfield(Params,'kf')
     Params.kf = (Params.R*Params.M0b); 
 end
 if ~isfield(Params,'kr')
     Params.kr = (Params.R*Params.M0a);
-end
-
-if ~isfield(Params,'simAdiabatic')
-    Params.simAdiabatic = false;
 end
 
 if isempty(Params.Ra) % allow you to specify either Ra or Raobs
@@ -64,15 +52,13 @@ end
 %% Build sequence, then convert to loop structure.
 % play sequence for 5 seconds, then fill sampling table.
 
-RFphase = 0; % starting excitation phase
-last_increment = 0;
-num2avgOver = 10; % you get some variation in signal, so keep the last few and average
+num2avgOver = 3; % you get some variation in signal, so keep the last few and average
 
 % Equivalent of 5 seconds of imaging to steady state, then record data. 
 loops = ceil(6/Params.TR) + num2avgOver;
 
 %% Standard Stuff
-M0 = [0 0 Params.M0a, Params.M0b, 0]';
+M0 = [0 0 0 0 Params.M0a, Params.M0b]'; 
 
 if Params.echoSpacing == 0 && Params.numExcitation > 1
     error( 'Please define Params.echoSpacing');
@@ -99,7 +85,8 @@ TI1 = Params.TI(1);
 TI2 = Params.TI(2); 
 
 % evolution time, between 180 inversion and first excitation
-ET1 = TI1 - EBT/2; 
+% Incorporate the length of the pulses.  
+ET1 = TI1 - EBT/2  - Params.Inv.Trf/2; % take off half the inversion pulse
 ET2 = (TI2 - EBT/2) - (TI1 + EBT/2); 
 
 if ET2 < 0 || ET1 < 0
@@ -107,41 +94,36 @@ if ET2 < 0 || ET1 < 0
 end
 
 % time delay after last excitation pulse (and echospacing) until next inversion
-TD = Params.TR - (TI2 + EBT/2);
+TD = Params.TR - (TI2 + EBT/2) - Params.Inv.Trf/2; % take off half the inversion pulse
 
-if Params.TR ~= (ET1 + EBT + ET2 + EBT+ TD)
+if Params.TR ~= (ET1 + EBT + ET2 + EBT+ TD + Params.Inv.Trf)
     error('sequence timing does not add up to TR value')
 end
 
 %% If simulating adiabatic pulse, get the pulse:
-if Params.simAdiabatic
-    [inv_pulse, ~] = GetAdiabaticPulse( Params.Inv.Trf,  Params.Inv.shape, 0, Params.Inv);
-else
-    Params = CalcBoundSatFromInversionPulse(Params); % Rrfb_exc and Rrfd_exc for inversion pulses
-end
+[inv_pulse, ~] = GetAdiabaticPulse( Params.Inv.Trf,  Params.Inv.shape, 0, Params.Inv);
 
-% Impact of Excitation Pulse of Bound pool
-Params = CalcBoundSatFrom2ExcitationPulse(Params, Params.flipAngle(1), Params.flipAngle(2));
+% Exc1
+Pulse = GetPulse(Params.flipAngle(1), 0, Params.Exc.Trf, Params.Exc.shape);
+t = 0:Params.Exc.Trf/(Params.Exc.nSamples-1):Params.Exc.Trf;
+exc_pulse1 = -1*1000*Pulse.amp*Pulse.b1(t);
+% The negative 1 factor is to apply in right direction based on how I wrote
+% out other bloch equations
 
+% Exc2
+Pulse = GetPulse(Params.flipAngle(2), 0, Params.Exc.Trf, Params.Exc.shape);
+t = 0:Params.Exc.Trf/(Params.Exc.nSamples-1):Params.Exc.Trf;
+exc_pulse2 = -1*1000*Pulse.amp*Pulse.b1(t);
 
 %% Need to determine a sufficient number of isochromats. 
-% can use this function to use more if needed.
-% Params.N_spin = DetermineNumberIsoChromat(Params, TD)
-
-% if Params.PerfectSpoiling % number of spins wont matter in this case
-%     Params.N_spin = 1;
-% else
-%     Params.N_spin = 201;
-% end
 if ~Params.PerfectSpoiling
     error('Isochromate simulation currently not implemented here')
 end
 Params.N_spin = 1;
 
-
 %% Setup Matrices
 if Params.CalcVector == 1
-    M = zeros(5,loops*20); % time-dependent magnetization storage for plotting
+    M = zeros(6,loops*20); % time-dependent magnetization storage for plotting
     M(:,1) = M0;
     time_vect = zeros( loops*20,1);
     idx = 2;
@@ -157,34 +139,22 @@ rep = 1; % to count over the number to average over
 %% Start of sequence loop
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-for i = 1:loops
-    
+for i = 1:loops    
     %% Start by applying an inversion pulse
-    if Params.simAdiabatic
-        % Convert mag vector
-        Minv = zeros(6,1);
-        Minv([1,3]) = M_t(1:2); % move free XY
-        Minv(5:6) = M_t(3:4); % Move free and bound Z
+    M_t = blochSimAdiabaticPulse( inv_pulse, Params.Inv ,...
+                                    0, Params, M_t, []);
 
-        % bloch sim and return magnetization
-        Minv = blochSimAdiabaticPulse( inv_pulse, Params.Inv ,...
-                                    0, Params, Minv, []);
-        M_t(1:2) = Minv([1,3]); % move free XY
-        M_t(3:4) = Minv(5:6); % Move free and bound Z
-    else
-        R = RotationMatrix_withBoundPool_Inversion( pi*Params.InversionEfficiency, 0, Params);
-        % Instanteous RF pulse
-        M_t = pagemtimes(R,M_t); % 50 percent faster than loop
-    end
+    M_t(1:4,:) = 0; % Typically gradients used to crush this
 
     if Params.CalcVector == 1
         M(:,idx) = mean(M_t,2); 
-        time_vect(idx) = time_vect(idx-1);
+        time_vect(idx) = time_vect(idx-1)+ Params.Inv.Trf;
         idx = idx+1;
     end % For viewing; 
 
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %% Spin evolution over time ET1
-    M_t = XYmag_Spoil(Params, M_t, ET1, 0, 0);
+    M_t = XYmag_Spoil_6vec(Params, M_t, ET1, 0, 0);
 
     if Params.CalcVector == 1
         M(:,idx) = mean(M_t,2); 
@@ -192,59 +162,44 @@ for i = 1:loops
         idx = idx+1;
     end % For viewing; 
 
-
-    %% Excitation Block
-    % Keep track of 5 magnetization vectors through excitation through
-    % instanteous rotation of water pool, plus 'instanteous' saturation of bound pool
-    % Keep track of XY mag for RF spoiling, gradient spoiling and spin diffusion. 
-    % Signal == XY magnetization immediately following application of Rotation. 
-    
-    % Compute the RF phase for spoiling for entire excitation train
-    if Params.RFspoiling && ~Params.PerfectSpoiling
-        [RFphase, last_increment] = IncrementRFspoilPhase( RFphase(end), Params, last_increment);
-    else
-        RFphase = zeros(1,Params.numExcitation);
-    end
-    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %% Excitation Block  
     for j = 1: Params.numExcitation
         
         % Calculate rotation matrix for excitation-specific phase
-        R = RotationMatrix_withBoundPool_MP2RAGE(Params.flipAngle(1)*pi/180, RFphase(j)*pi/180, Params, 1);
-
-        % Instanteous RF pulse
-        M_t = pagemtimes(R,M_t); % 50 percent faster than loop
+        M_t = blochSimAdiabaticPulse( exc_pulse1, Params.Exc ,...
+                                0, Params, M_t, []);
     
         if Params.CalcVector == 1
             M(:,idx) = mean(M_t,2); 
-            time_vect(idx) = time_vect(idx-1);
+            time_vect(idx) = time_vect(idx-1)+ Params.Exc.Trf;
             idx = idx+1;
         end % For viewing;  
 
         %% Store the magnetization of each excitation pulse after 5 seconds prep
         if i > loops-num2avgOver && (j == readNum) 
 
-            Sig_vec1(rep) = TransverseMagnetizationMagnitude(M_t);
+           Sig_vec1(rep) = TransverseMagnetizationMagnitude_6vec(M_t);
     
            if (i == loops) && (j == readNum) % if simulation is done...             
                outSig1 = mean(Sig_vec1); 
            end
-            
         end % End 'if SS_reached'   
         
-        %% Apply Gradient Spoiling
-        % Note that Params.echoSpace ~= 0.
-        M_t = XYmag_Spoil( Params, M_t, Params.echoSpacing, 0, 1);
-            
+        %% Evolution and Apply Spoiling
+        M_t = XYmag_Spoil_6vec( Params, M_t, Params.echoSpacing- Params.Exc.Trf, 0, 0);
+        M_t(1:4,:) = 0;
+
         if Params.CalcVector == 1
             M(:,idx) = mean(M_t,2); 
-            time_vect(idx) = time_vect(idx-1)+ Params.echoSpacing;
+            time_vect(idx) = time_vect(idx-1)+ Params.echoSpacing- Params.Exc.Trf;
             idx = idx+1;
         end % For viewing;      
-        
     end % End '1: Params.numExcitation' 
 
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %% Spin evolution between two excitation trains, over time ET2
-    M_t = XYmag_Spoil(Params, M_t, ET2, 0, 0);
+    M_t = XYmag_Spoil_6vec(Params, M_t, ET2, 0, 0);
 
     if Params.CalcVector == 1
         M(:,idx) = mean(M_t,2); 
@@ -252,33 +207,23 @@ for i = 1:loops
         idx = idx+1;
     end % For viewing; 
 
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %% Excitation Block - 2nd image
-    
-    % Compute the RF phase for spoiling for entire excitation train
-    if Params.RFspoiling && ~Params.PerfectSpoiling
-        [RFphase, last_increment] = IncrementRFspoilPhase( RFphase(end), Params, last_increment);
-    else
-        RFphase = zeros(1,Params.numExcitation);
-    end
-    
-    for j = 1: Params.numExcitation
-        
+    for j = 1: Params.numExcitation        
         % Calculate rotation matrix for excitation-specific phase
-        R = RotationMatrix_withBoundPool_MP2RAGE(Params.flipAngle(2)*pi/180, RFphase(j)*pi/180, Params, 2);
-
-        % Instanteous RF pulse
-        M_t = pagemtimes(R,M_t); % 50 percent faster than loop
+        M_t = blochSimAdiabaticPulse( exc_pulse2, Params.Exc ,...
+                                0, Params, M_t, []);
     
         if Params.CalcVector == 1
             M(:,idx) = mean(M_t,2); 
-            time_vect(idx) = time_vect(idx-1);
+            time_vect(idx) = time_vect(idx-1) + Params.Exc.Trf;
             idx = idx+1;
         end % For viewing;  
 
         %% Store the magnetization of each excitation pulse after 5 seconds prep
         if i > loops-num2avgOver && (j == readNum) 
 
-            Sig_vec2( rep ) = TransverseMagnetizationMagnitude(M_t);
+            Sig_vec2( rep ) = TransverseMagnetizationMagnitude_6vec(M_t);
     
            if (i == loops) && (j == readNum) % if simulation is done...             
                outSig2 = mean(Sig_vec2); % output 1xTurbofactor vector
@@ -286,8 +231,7 @@ for i = 1:loops
                if Params.CalcVector == 1
                    M(:,idx:end) = [];
                    time_vect(idx:end) = [];
-               end
-               
+               end             
                return;
            end
             
@@ -297,22 +241,21 @@ for i = 1:loops
            end
         end % End 'if SS_reached'   
 
-        
-        %% Apply Gradient Spoiling
-        % Note that Params.echoSpace ~= 0.
-        M_t = XYmag_Spoil( Params, M_t, Params.echoSpacing, 0, 1);
+        %% Evolution and Apply Spoiling
+        M_t = XYmag_Spoil_6vec( Params, M_t, Params.echoSpacing- Params.Exc.Trf, 0, 0);
+        M_t(1:4,:) = 0;
             
         if Params.CalcVector == 1
             M(:,idx) = mean(M_t,2); 
-            time_vect(idx) = time_vect(idx-1)+ Params.echoSpacing;
+            time_vect(idx) = time_vect(idx-1)+ Params.echoSpacing- Params.Exc.Trf;
             idx = idx+1;
         end % For viewing;      
         
     end % End '1: Params.numExcitation' 
 
-
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %% Spin evolution over time TD
-    M_t = XYmag_Spoil(Params, M_t, TD, 0, 0);
+    M_t = XYmag_Spoil_6vec(Params, M_t, TD, 0, 0);
 
     if Params.CalcVector == 1
         M(:,idx) = mean(M_t,2); 
@@ -323,15 +266,28 @@ for i = 1:loops
 end
 
 
-
-
+% MP2RAGE.B0          = Params.B0;                  % In Tesla
+% MP2RAGE.TR          = Params.TR;                  % MP2RAGE TR in seconds
+% MP2RAGE.TRFLASH     = Params.echoSpacing;             % TR of the GRE readout
+% MP2RAGE.TIs         = Params.TI;   % Inversion times - time between middle of refocusing pulse and excitatoin of the k-space center encoding
+% MP2RAGE.NZslices    = Params.numExcitation;            % Slices Per Slab * [PartialFourierInSlice-0.5  0.5]
+% MP2RAGE.FlipDegrees = Params.flipAngle;  
+% B1.img = 1;
+% MP2RAGEimg.img = calculate_UNI_from_sims( outSig1, outSig2);
+% MP2RAGEINV2img.img = outSig2;
+% [ T1corr, ~, ~] = CR_T1B1correctpackageTFL_withM0( B1, MP2RAGEimg, MP2RAGEINV2img, MP2RAGE, [], 0.96);
+% mp2rage_T1 = T1corr.img;
+% disp(['Input T1: ',num2str(1/Params.Raobs*1000),'; Output T1: ',num2str(mp2rage_T1)]);
 
 %% Debug and view
 % figure;
-% plot(time_vect, sqrt(sum(M(1:2,:).^2))); xlim([0 15])
+% plot(time_vect, sqrt(sum(M([1,3],:).^2))); xlim([0 15])
 % % 
 % figure;
-% plot(time_vect, M(3,:)); xlim([0 15])
+% plot(time_vect, M(5,:)); xlim([0 15])
+
+% Sig= CR_FLASH_solver(5, Params.echoSpacing, 1, 1, 1./Params.Raobs)
+
 
 % figure;
 % plot(time_vect, M(4,:))
