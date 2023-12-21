@@ -30,8 +30,17 @@ T1wInfo.numExcitation  = T1wInfo.TurboFactor;
 T1wInfo.AccelerationFactor = 2;
 T1wInfo.SplitBrain     = 1;
 
+% T1wInfo.TI             = 1100/1000; % in seconds
+% T1wInfo.TD             = 1000/1000; % in seconds
+
+% Added 2023 Dec
 T1wInfo.TI             = 1100/1000; % in seconds
-T1wInfo.TD             = 1000/1000; % in seconds
+T1wInfo.TR             = 2674.8/1000;
+T1wInfo.TD             = 929.96/1000; % in seconds
+T1wInfo.TE             = 2.72/1000; % in seconds
+T1wInfo.echoSpacing    = 6.86/1000;
+T1wInfo.flipAngle      = 12;
+% end add
 
 T1wInfo.InvPulseDur    = 10.24e-3; % seconds - long adiabatic
 T1wInfo.InversionEfficiency = 0.96; % percentage
@@ -55,6 +64,11 @@ PDwInfo.AccelerationFactor = 2;
 PDwInfo.SplitBrain      = 0;
 PDwInfo.echoSpacing     = 0;
 
+% Added 2023 Dec
+PDwInfo.TR              = 7.5/1000;
+PDwInfo.TE              = 2.848/1000;
+PDwInfo.flipAngle       = 4;
+% end add
 
 
 
