@@ -1,4 +1,4 @@
-function [M_out, t_out] = calcPoolChange(A_mat, B_mat, I, t, M_in, t_in)
+function [M_out, t_out] = calcPoolChange_1pool(A_mat, B_mat, I, t, M_in, t_in)
 
 % This is intended to clean up code to calculate (n) pool changes. 
 % Inputs:
