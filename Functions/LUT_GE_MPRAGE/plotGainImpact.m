@@ -17,7 +17,7 @@
 
 Params.MTC = 0;
 Params.B0 = 3;
-Params.TissueType = 'WM';
+Params.TissueType = 'GM';
 Params = DefaultCortexTissueParams(Params);
 [T1wInfo, PDwInfo] = defaultGEparamObject(Params);
 
@@ -36,10 +36,13 @@ pdTR = PDwInfo.TR;
 pdflip = PDwInfo.flipAngle;
 pdTE = PDwInfo.TE;
 
-lutPrefix = 'MAC_MPR_';
-LUT_str = strcat(lutPrefix, Readout, '_TI', num2str(TI), '_TR',num2str(TR), '_flip',num2str(t1flip), ...
-        '_echoSp',num2str(echoSpacing), '_turbofact',num2str(numExcitation),'_TE',num2str(t1TE), ...
-        '_pdTR',num2str(pdTR), '_pdflip',num2str(pdflip), '_TE',num2str(pdTE) );
+% lutPrefix = 'MAC_MPR_';
+% LUT_str = strcat(lutPrefix, Readout, '_TI', num2str(TI), '_TR',num2str(TR), '_flip',num2str(t1flip), ...
+%         '_echoSp',num2str(echoSpacing), '_turbofact',num2str(numExcitation),'_TE',num2str(t1TE), ...
+%         '_pdTR',num2str(pdTR), '_pdflip',num2str(pdflip), '_TE',num2str(pdTE) );
+
+% Located in: 'E:\Github\Bloch_simulation_Code\Functions\LUT_GE_MPRAGE\R1_mapping_for_Chris\LUT_files_t2_80ms'
+load('centric_TI1.1_TR2.8754_flip12_echoSp0.007912_turbofact98_pdTR0.007908_pdflip4.mat')
 
 % For varying echotimes:
 if ~isfield(T1wInfo,'TE') 
@@ -80,7 +83,7 @@ for  m = 1:length(R1v)
 
     MPRAGE_vector = BlochSim_MPRAGESequence_1pool(T1wInfo, 'Raobs', R1v(m) );
 
-    ratioV(m) = FLASH/MPRAGE_vector(10);
+    ratioV(m) = MPRAGE_vector(1)/FLASH;
 end
 
 % From those ratio values corresponding to T1's, plug into LUT.
@@ -116,6 +119,7 @@ ax = gca;    ax.FontSize = 18;
 colorbar('eastoutside')
 set(gcf,'Position',[100 100 800 600])
 view(0,90)
+title('Fit R_1')
 
 % Find where R1map == r1rg
 match = abs(r1rG - R1map/1000);
@@ -135,48 +139,6 @@ temp(R1sMatch) = 1;
 
 
 
-
-
-B1_vector = 1; % get B1 contour map style artifact in sat maps with higher increment
-
-% For interpolation:
-Ratio_vector = linspace(0.01, 3.5, 70); % can increase for precision?
-T1_vector = (0.4:0.05:2.5) *1000; % Densely sampled near region of interest
-T1Matrix = zeros(length(B1_vector), length(Ratio_vector));
-
-tic
-% calculate the lookup table
-RatioValue = zeros(length(B1_vector), length(T1_vector));
-
-for i = 1:length(B1_vector)           
-    parfor  m = 1:length(T1_vector)
-
-        % Simulate PDw for set B1 and T1
-
-        FLASH_vector = BlochSimFlashSequence_1pool(PDwInfo, 'flipAngle',...
-                B1_vector(i)*PDwInfo.flipAngle,...
-                'Raobs', 1./T1_vector(m)*1000 );
-
-        FLASH = FLASH_vector*exp(-PDwInfo.TE *PDwInfo.R2star);
-
-         % only one value for flash, so return that
-        %FLASH = CR_generate_BSF_scaling_v1( FLASH_vector, PDwInfo, PDwSamplingTable, PDw_b, PDw_fftb);  
-        
-        % Solve MPRAGE signal for set B1 and T1
-        MPRAGE_vector = BlochSim_MPRAGESequence_1pool(T1wInfo, 'flipAngle',...
-                B1_vector(i)*T1wInfo.flipAngle,...
-                'Raobs', 1./T1_vector(m)*1000 );
-
-        MPRAGE_v = MPRAGE_vector(1); 
-        RatioValue(i,m) = MPRAGE_v / FLASH;
-
-    end   
-
-    % Use the ratio value and vector to get T1 values. 
-    T1Matrix(i,:) = interp1( RatioValue(i,:) , T1_vector, Ratio_vector );  %, 'pchip' -> gives completely different answer...
-                
-end
-toc
 
 
 

@@ -24,15 +24,15 @@ if Params.B0 == 7
         SAR_limit = 3; % Empirical value to match what I get at scanner
     end
 
-    empFact = -1.35e-5*Params.TR + 1.21e-3; % Rough estimate
+    empFact = 1.44e-3; % 3T
 
 else
-    SAR_limit = 3; %(W/kg)
+    SAR_limit = 3; %(W/kg)1
     empFact = 1.44e-3; % 3T
 end
     
 gam = 42.576e6;
-kg = 60; % reference weight
+kg = 55; % reference weight
 w0 = gam *Params.B0;
 
 

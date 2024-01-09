@@ -28,6 +28,7 @@ end
 
 if ~isfield(Params,'GradientSpoiling') % if not defined,assume spoiling in readout
     Params.GradientSpoiling = true; % binary
+    Params.PerfectSpoiling = false; % eliminate transverse, used for testing
 end
 
 if ~isfield(Params,'PerfectSpoiling') % if not defined,assume spoiling in readout

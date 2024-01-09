@@ -43,11 +43,11 @@ end
 
 if Params.MTC
     % Allow different spoiling for MT
-
-    if ~isfield(Params,'GradientSpoilingStrength_MT')
-        Params.GradientSpoilingStrength_MT = 20; % mT/m
+    if Params.GradientSpoiling 
+        if ~isfield(Params,'GradientSpoilingStrength_MT')
+            Params.GradientSpoilingStrength_MT = 20; % mT/m
+        end
     end
-
 
     if ~isfield(Params,'A_g') || ~isfield(Params,'maxDephase') || ~isfield(Params,'G_t')
         % Calculate Spoiling moment from gradient
