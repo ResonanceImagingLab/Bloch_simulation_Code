@@ -8,4 +8,3 @@ fitTissParams/outputs/6p0_BSF
 kspaceWeighting/Atlas_reference/
 Functions/LUT/LUT_files*
 *.asv
-Visualization/kspace/phaseFreqEncodeSurf_FreqDephase.gif

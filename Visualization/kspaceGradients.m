@@ -37,8 +37,8 @@ for i = 1:fps*sec
     surf(xx, yy, zz, 'EdgeColor','none')
     colormap('turbo')
     zlim([-2 2])
-    xlabel('X', FontSize=18)
-    ylabel('Y', FontSize=18)
+    xlabel('X', FontSize=16)
+    ylabel('Y', FontSize=16)
     view(-21, 51);
 
     t = t+tinc*tincScale;
@@ -56,17 +56,17 @@ for i = 1:fps*sec
     quiver(X,Y,U,V, 0, 'k','LineWidth', 1.75, 'MaxHeadSize', 0.9);
     view(0,90);
     xticks([ ]); yticks([ ]); axis image;
-    xlabel('X', FontSize=18)
-    ylabel('Y', FontSize=18)
+    xlabel('X', FontSize=16)
+    ylabel('Y', FontSize=16)
     xlim([-2, numSpins+1]); ylim([-2, numSpins+1]); 
     hold off
     theta = theta +tinc2*tincScale;
 
     drawnow;
-    set(gcf,'Position',[200 300 1200 600])
-    sgtitle('Frequency  Encoding', 'FontSize', 30)
+    set(gcf,'Position',[200 300 800 400])
+    sgtitle('Frequency  Encoding', 'FontSize', 20)
 
-    exportgraphics(gcf,filename,'Append',true);
+    exportgraphics(gcf,filename,'Append',true, 'Resolution', 100);
     
 end
 
@@ -112,8 +112,8 @@ for i = 1:fps*sec
     surf(xx, yy, zz, 'EdgeColor','none')
     colormap('turbo')
     zlim([-2 2])
-    xlabel('X', FontSize=18)
-    ylabel('Y', FontSize=18)
+    xlabel('X', FontSize=16)
+    ylabel('Y', FontSize=16)
     view(-21, 51);
 
     t = t+tinc*tincScale;
@@ -131,17 +131,17 @@ for i = 1:fps*sec
     quiver(X,Y,U,V, 0, 'k','LineWidth', 1.75, 'MaxHeadSize', 0.9);
     view(0,90);
     xticks([ ]); yticks([ ]); axis image;
-    xlabel('X', FontSize=18)
-    ylabel('Y', FontSize=18)
+    xlabel('X', FontSize=16)
+    ylabel('Y', FontSize=16)
     xlim([-2, numSpins+1]); ylim([-2, numSpins+1]); 
     hold off
     theta = theta +tinc2*tincScale;
 
     drawnow;
-    set(gcf,'Position',[200 300 1200 600])
-    sgtitle('Phase  Encoding', 'FontSize', 30)
+    set(gcf,'Position',[200 300 800 400])
+    sgtitle('Phase  Encoding', 'FontSize', 20)
 
-    exportgraphics(gcf,filename,'Append',true);
+    exportgraphics(gcf,filename,'Append',true, 'Resolution', 100);
     
 end
 
@@ -187,8 +187,8 @@ for i = 1:fps*sec
     surf(xx, yy, zz, 'EdgeColor','none')
     colormap('turbo')
     zlim([-2 2])
-    xlabel('X', FontSize=18)
-    ylabel('Y', FontSize=18)
+    xlabel('X', FontSize=16)
+    ylabel('Y', FontSize=16)
     view(-16, 72);
 
     t = t+tinc*tincScale;
@@ -206,17 +206,17 @@ for i = 1:fps*sec
     quiver(X,Y,U,V, 0, 'k','LineWidth', 1.75, 'MaxHeadSize', 0.9);
     view(0,90);
     xticks([ ]); yticks([ ]); axis image;
-    xlabel('X', FontSize=18)
-    ylabel('Y', FontSize=18)
+    xlabel('X', FontSize=16)
+    ylabel('Y', FontSize=16)
     xlim([-2, numSpins+1]); ylim([-2, numSpins+1]); 
     hold off
     theta = theta +tinc2*tincScale;
 
     drawnow;
-    set(gcf,'Position',[200 300 1200 600])
-    sgtitle('Phase  Encoding', 'FontSize', 30)
+    set(gcf,'Position',[200 300 800 400])
+    sgtitle('Phase  Encoding', 'FontSize', 20)
 
-    exportgraphics(gcf,filename,'Append',true);
+    exportgraphics(gcf,filename,'Append',true, 'Resolution', 100);
     
 end
 
@@ -246,8 +246,8 @@ for i = 1:fps*sec
     surf(xx, yy, zz, 'EdgeColor','none')
     colormap('turbo')
     zlim([-2 2])
-    xlabel('X', FontSize=18)
-    ylabel('Y', FontSize=18)
+    xlabel('X', FontSize=16)
+    ylabel('Y', FontSize=16)
     view(-16, 72);
 
     t = t+tinc*tincScale;
@@ -264,17 +264,17 @@ for i = 1:fps*sec
     quiver(X,Y,U,V, 0, 'k','LineWidth', 1.75, 'MaxHeadSize', 0.9);
     view(0,90);
     xticks([ ]); yticks([ ]); axis image;
-    xlabel('X', FontSize=18)
-    ylabel('Y', FontSize=18)
+    xlabel('X', FontSize=16)
+    ylabel('Y', FontSize=16)
     xlim([-2, numSpins+1]); ylim([-2, numSpins+1]); 
     hold off
     theta = theta +tinc2*tincScale;
 
     drawnow;
-    set(gcf,'Position',[200 300 1200 600])
-    sgtitle('Frequency  Encoding', 'FontSize', 30)
+    set(gcf,'Position',[200 300 800 400])
+    sgtitle('Frequency  Encoding', 'FontSize', 20)
 
-    exportgraphics(gcf,filename,'Append',true);
+    exportgraphics(gcf,filename,'Append',true, 'Resolution', 100);
     
 end
 
@@ -320,8 +320,8 @@ for i = 1:fps*sec
     surf(xx, yy, zz, 'EdgeColor','none')
     colormap('turbo')
     zlim([-2 2])
-    xlabel('X', FontSize=18)
-    ylabel('Y', FontSize=18)
+    xlabel('X', FontSize=16)
+    ylabel('Y', FontSize=16)
     view(-16, 72);
 
     t = t+tinc*tincScale;
@@ -339,17 +339,17 @@ for i = 1:fps*sec
     quiver(X,Y,U,V, 0, 'k','LineWidth', 1.75, 'MaxHeadSize', 0.9);
     view(0,90);
     xticks([ ]); yticks([ ]); axis image;
-    xlabel('X', FontSize=18)
-    ylabel('Y', FontSize=18)
+    xlabel('X', FontSize=16)
+    ylabel('Y', FontSize=16)
     xlim([-2, numSpins+1]); ylim([-2, numSpins+1]); 
     hold off
     theta = theta +tinc2*tincScale;
 
     drawnow;
-    set(gcf,'Position',[200 300 1200 600])
-    sgtitle('Phase  Encoding', 'FontSize', 30)
+    set(gcf,'Position',[200 300 800 400])
+    sgtitle('Phase  Encoding', 'FontSize', 20)
 
-    exportgraphics(gcf,filename,'Append',true);
+    exportgraphics(gcf,filename,'Append',true, 'Resolution', 100);
     
 end
 
@@ -382,8 +382,8 @@ for i = 1:fps*sec
     surf(xx, yy, zz, 'EdgeColor','none')
     colormap('turbo')
     zlim([-2 2])
-    xlabel('X', FontSize=18)
-    ylabel('Y', FontSize=18)
+    xlabel('X', FontSize=16)
+    ylabel('Y', FontSize=16)
     view(-16, 72);
 
     t = t+tinc*tincScale;
@@ -400,17 +400,17 @@ for i = 1:fps*sec
     quiver(X,Y,U,V, 0, 'k','LineWidth', 1.75, 'MaxHeadSize', 0.9);
     view(0,90);
     xticks([ ]); yticks([ ]); axis image;
-    xlabel('X', FontSize=18)
-    ylabel('Y', FontSize=18)
+    xlabel('X', FontSize=16)
+    ylabel('Y', FontSize=16)
     xlim([-2, numSpins+1]); ylim([-2, numSpins+1]); 
     hold off
     theta = theta +tinc2*tincScale;
 
     drawnow;
-    set(gcf,'Position',[200 300 1200 600])
-    sgtitle('Frequency  Encoding - Dephase', 'FontSize', 30)
+    set(gcf,'Position',[200 300 800 400])
+    sgtitle('Frequency  Encoding - Dephase', 'FontSize', 20)
 
-    exportgraphics(gcf,filename,'Append',true);
+    exportgraphics(gcf,filename,'Append',true, 'Resolution', 100);
     
 end
 
@@ -442,8 +442,8 @@ for i = 1:fps*sec
     surf(xx, yy, zz, 'EdgeColor','none')
     colormap('turbo')
     zlim([-2 2])
-    xlabel('X', FontSize=18)
-    ylabel('Y', FontSize=18)
+    xlabel('X', FontSize=16)
+    ylabel('Y', FontSize=16)
     view(-16, 72);
 
     t = t+tinc*tincScale;
@@ -460,17 +460,17 @@ for i = 1:fps*sec
     quiver(X,Y,U,V, 0, 'k','LineWidth', 1.75, 'MaxHeadSize', 0.9);
     view(0,90);
     xticks([ ]); yticks([ ]); axis image;
-    xlabel('X', FontSize=18)
-    ylabel('Y', FontSize=18)
+    xlabel('X', FontSize=16)
+    ylabel('Y', FontSize=16)
     xlim([-2, numSpins+1]); ylim([-2, numSpins+1]); 
     hold off
     theta = theta +tinc2*tincScale;
 
     drawnow;
-    set(gcf,'Position',[200 300 1200 600])
-    sgtitle('Frequency  Encoding - Rephase', 'FontSize', 30)
+    set(gcf,'Position',[200 300 800 400])
+    sgtitle('Frequency  Encoding - Rephase', 'FontSize', 20)
 
-    exportgraphics(gcf,filename,'Append',true);
+    exportgraphics(gcf,filename,'Append',true, 'Resolution', 100);
     
 end
 
