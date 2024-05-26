@@ -55,9 +55,9 @@ Prot2 = MTParams(:,1) == 50;
 MTParams(:,1) = MTParams(:,1)/1000; 
 
 
-% convert alphaMT to B1
-MTParams(Prot1,3) = MTParams(Prot1,3)/(360*42.6*pulseDur1);
-MTParams(Prot2,3) = MTParams(Prot2,3)/(360*42.6*pulseDur2);
+% % convert alphaMT to B1
+% MTParams(Prot1,3) = MTParams(Prot1,3)/(360*42.6*pulseDur1);
+% MTParams(Prot2,3) = MTParams(Prot2,3)/(360*42.6*pulseDur2);
 
 % % view table plotted:
 % figure;
@@ -100,7 +100,7 @@ for i = 1:length(sim_qMT)
 
     Params.TR = MTParams(i,1);
     Params.flipAngle = MTParams(i,2);
-    Params.b1 = MTParams(i,3);
+    Params.satFlipAngle = MTParams(i,3);
     Params.delta = MTParams(i,4);
     
     if Prot1(i)

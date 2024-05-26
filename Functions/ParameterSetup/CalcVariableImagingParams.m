@@ -43,6 +43,9 @@ end
 
 if Params.MTC
     % Allow different spoiling for MT
+    if ~isfield(Params,'G_time_elapse_MT')
+        Params.G_time_elapse_MT = 1.6e-3;
+    end
 
     if ~isfield(Params,'GradientSpoilingStrength_MT')
         Params.GradientSpoilingStrength_MT = 20; % mT/m
